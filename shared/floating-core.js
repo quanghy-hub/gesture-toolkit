@@ -1,6 +1,7 @@
 (() => {
     const ext = globalThis.GestureExtension;
     const viewport = ext.shared.viewportCore;
+    const runtime = ext.shared.runtime;
     const hasStorageApi = () => !!globalThis.chrome?.storage?.local;
     const positionMemoryStore = {};
     const SHARED_ACTION_STYLE_ID = 'gesture-shared-floating-action-style';
@@ -43,14 +44,28 @@
         `
     });
     const isNodeLike = (value) => value instanceof Node;
+    const hasStyleApi = (value) => !!value && typeof value === 'object' && !!value.style;
+    const isHtmlDocument = () => runtime?.isHtmlDocument?.() ?? false;
+    const getFloatingRoot = () => document.documentElement || document.body || null;
     const isExtensionContextInvalidated = (error) => /Extension context invalidated/i.test(String(error?.message || error || ''));
     const appendHtmlFragment = (element, htmlContent) => {
-        if (!htmlContent) {
+        if (!element || !htmlContent) {
             return;
         }
-        const template = document.createElement('template');
-        template.innerHTML = String(htmlContent).trim();
-        element.replaceChildren(template.content.cloneNode(true));
+        const trimmed = String(htmlContent).trim();
+        if (!trimmed) {
+            element.textContent = '';
+            return;
+        }
+        if (isHtmlDocument()) {
+            const template = document.createElement('template');
+            if ('content' in template && typeof element.replaceChildren === 'function') {
+                template.innerHTML = trimmed;
+                element.replaceChildren(template.content.cloneNode(true));
+                return;
+            }
+        }
+        element.textContent = trimmed;
     };
     const ensureSharedActionButtonStyles = () => {
         if (document.getElementById(SHARED_ACTION_STYLE_ID)) {
@@ -96,7 +111,7 @@
                 color: #5bb8ff;
             }
         `;
-        (document.head || document.documentElement).appendChild(style);
+        getFloatingRoot()?.appendChild(style);
     };
     ext.shared.floatingCore = {
         icons: SHARED_ICONS,
@@ -116,7 +131,13 @@
         createFloatingElementApi: (element) => ({
             element,
             show(display) {
+                if (!element) {
+                    return;
+                }
                 element.hidden = false;
+                if (!hasStyleApi(element)) {
+                    return;
+                }
                 if (display) {
                     element.style.display = display;
                 } else {
@@ -133,17 +154,31 @@
                 }
             },
             hide() { 
+                if (!element) {
+                    return;
+                }
                 element.hidden = true; 
-                element.style.display = 'none'; 
+                if (hasStyleApi(element)) {
+                    element.style.display = 'none';
+                }
             },
             setPosition(left, top) {
+                if (!hasStyleApi(element)) {
+                    return;
+                }
                 element.style.left = typeof left === 'number' ? `${left}px` : left;
                 element.style.top = typeof top === 'number' ? `${top}px` : top;
             },
             setOpacity(value) {
+                if (!hasStyleApi(element)) {
+                    return;
+                }
                 element.style.opacity = value;
             },
             setBadge(text) {
+                if (!element || typeof element.querySelector !== 'function') {
+                    return;
+                }
                 let badge = element.querySelector('.gesture-floating-badge');
                 if (!badge) {
                     badge = document.createElement('span');
@@ -151,12 +186,14 @@
                     element.appendChild(badge);
                 }
                 badge.textContent = text;
-                badge.style.display = text ? 'flex' : 'none';
+                if (hasStyleApi(badge)) {
+                    badge.style.display = text ? 'flex' : 'none';
+                }
             },
             setActive(value) {
-                element.classList.toggle('is-active', !!value);
+                element?.classList?.toggle?.('is-active', !!value);
             },
-            destroy() { element.remove(); }
+            destroy() { element?.remove?.(); }
         }),
         createTriggerElement: ({ className, textContent, htmlContent, hidden = false }) => {
             const element = document.createElement('button');
@@ -165,10 +202,12 @@
             if (htmlContent) appendHtmlFragment(element, htmlContent);
             else if (textContent) element.textContent = textContent;
             element.hidden = hidden;
-            if (hidden) element.style.display = 'none';
-            element.style.position = 'fixed';
-            element.style.zIndex = '2147483646';
-            document.documentElement.appendChild(element);
+            if (hidden && hasStyleApi(element)) element.style.display = 'none';
+            if (hasStyleApi(element)) {
+                element.style.position = 'fixed';
+                element.style.zIndex = '2147483646';
+            }
+            getFloatingRoot()?.appendChild(element);
             return ext.shared.floatingCore.createFloatingElementApi(element);
         },
         createActionButton: ({ id, className = '', title = '', ariaLabel = '', htmlContent = '', hidden = false, parent, position = 'fixed', zIndex = '2147483646' }) => {
@@ -189,22 +228,26 @@
                 appendHtmlFragment(element, htmlContent);
             }
             element.hidden = hidden;
-            if (hidden) {
+            if (hidden && hasStyleApi(element)) {
                 element.style.display = 'none';
             }
-            element.style.position = position;
-            element.style.zIndex = zIndex;
-            (parent || document.documentElement).appendChild(element);
+            if (hasStyleApi(element)) {
+                element.style.position = position;
+                element.style.zIndex = zIndex;
+            }
+            (parent || getFloatingRoot())?.appendChild(element);
             return ext.shared.floatingCore.createFloatingElementApi(element);
         },
         createPanelRoot: ({ className, hidden = false }) => {
             const element = document.createElement('div');
             element.className = className;
             element.hidden = hidden;
-            if (hidden) element.style.display = 'none';
-            element.style.position = 'fixed';
-            element.style.zIndex = '2147483645';
-            document.documentElement.appendChild(element);
+            if (hidden && hasStyleApi(element)) element.style.display = 'none';
+            if (hasStyleApi(element)) {
+                element.style.position = 'fixed';
+                element.style.zIndex = '2147483645';
+            }
+            getFloatingRoot()?.appendChild(element);
             return ext.shared.floatingCore.createFloatingElementApi(element);
         },
         bindDragBehavior: ({ target, threshold = 6, getInitialPosition, onMove, onClick, onDragEnd }) => {

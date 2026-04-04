@@ -33,10 +33,6 @@
     const getCoord = (event) => touch?.getPrimaryPoint?.(event) || { x: 0, y: 0 };
     const formatTime = (seconds) => `${Math.floor(seconds / 60)}.${(Math.floor(seconds) % 60).toString().padStart(2, '0')}`;
     const clamp = (value, min, max) => viewport?.clamp?.(value, min, max) ?? Math.max(min, Math.min(max, value));
-    const onPointer = (node, fn) => {
-        node?.addEventListener('touchstart', fn, { passive: false });
-        node?.addEventListener('mousedown', fn);
-    };
     const getRect = (node) => node?.getBoundingClientRect?.() || { width: 0, height: 0, left: 0, right: 0, top: 0, bottom: 0 };
     const queryAllDeep = (selector, root = document) => {
         const results = [];
@@ -252,13 +248,27 @@
         }
         const wrapper = $('fvp-wrapper');
         if (wrapper) {
-            const video = wrapper.querySelector('video');
+            const video = getFloatingActiveVideo(wrapper);
             if (video) return video;
         }
         return getDirectVideos()[0] || null;
     };
 
+    const getFloatingActiveVideo = (wrapper = $('fvp-wrapper')) => {
+        if (!wrapper) return null;
+        const floatingVideos = [...wrapper.querySelectorAll('video')];
+        return floatingVideos.find((node) => node.parentElement === wrapper) || floatingVideos[floatingVideos.length - 1] || null;
+    };
+
     const getVideoAtPoint = (x, y) => {
+        if (typeof document.elementsFromPoint === 'function') {
+            for (const node of document.elementsFromPoint(x, y)) {
+                if (!(node instanceof Element)) continue;
+                const video = node.tagName === 'VIDEO' ? node : node.closest?.('video');
+                if (!video || !video.isConnected || video.closest('#fvp-wrapper')) continue;
+                if (isDetectableVideo(video)) return video;
+            }
+        }
         for (const video of getDirectVideos()) {
             if (!isDetectableVideo(video) || video.closest('#fvp-wrapper')) continue;
             const rect = getRect(video);
@@ -299,13 +309,20 @@
     const isFloatingGestureBlockedTarget = (target) => {
         const node = target instanceof Element ? target : null;
         if (!node) return false;
-        return Boolean(node.closest('#fvp-left-panel, #fvp-ctrl, #fvp-res-popup, button, input, select, textarea, a, label'));
+        return Boolean(node.closest('#fvp-left-panel, #fvp-ctrl, #fvp-res-popup, .fvp-resize-handle, button, input, select, textarea, a, label'));
+    };
+
+    const stopTouchEventForFloating = (event) => {
+        if (event.cancelable) event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation?.();
     };
 
     const installTouchSwipeSeek = () => {
         const swipe = {
             active: false,
             video: null,
+            startedInsideFloatingBox: false,
             startX: 0,
             startY: 0,
             startTime: 0,
@@ -320,6 +337,7 @@
             swipe.active = false;
             swipe.cancelled = false;
             swipe.video = null;
+            swipe.startedInsideFloatingBox = false;
             swipe.lastDelta = 0;
             swipe.gesture = '';
             swipe.allowVerticalSwitch = false;
@@ -344,20 +362,23 @@
 
                 const wrapper = startedInsideFloatingBox ? $('fvp-wrapper') : null;
                 const wrapperRect = wrapper ? getRect(wrapper) : null;
-                let video = getVideoAtPoint(point.clientX, point.clientY);
-                if (!video) {
-                    if (startedInsideFloatingBox && wrapperRect?.width && wrapperRect?.height) {
-                        video = wrapper?.querySelector('video');
-                    }
-                }
+                const video = (startedInsideFloatingBox && wrapperRect?.width && wrapperRect?.height)
+                    ? getFloatingActiveVideo(wrapper)
+                    : getVideoAtPoint(point.clientX, point.clientY);
                 if (!video?.isConnected || !Number.isFinite(video.duration) || video.duration <= 0) return;
                 const rect = (startedInsideFloatingBox && wrapperRect?.width && wrapperRect?.height) ? wrapperRect : getRect(video);
                 if (!rect.width || !rect.height) return;
-                const bottomGuard = Math.min(44, Math.max(18, rect.height * 0.1));
+                const bottomGuard = startedInsideFloatingBox
+                    ? 60
+                    : Math.min(44, Math.max(18, rect.height * 0.1));
                 if (point.clientY > rect.bottom - bottomGuard) return;
+                if (startedInsideFloatingBox) {
+                    stopTouchEventForFloating(event);
+                }
                 Object.assign(swipe, {
                     video,
                     active: true,
+                    startedInsideFloatingBox,
                     startX: point.clientX,
                     startY: point.clientY,
                     startTime: video.currentTime,
@@ -405,12 +426,16 @@
             if (swipe.gesture === 'switch') {
                 if (absDy < commitDistance) return;
                 swipe.pendingSwitchDir = dy < 0 ? 1 : -1;
-                if (event.cancelable) event.preventDefault();
+                if (swipe.startedInsideFloatingBox) {
+                    stopTouchEventForFloating(event);
+                } else if (event.cancelable) event.preventDefault();
                 return;
             }
             if (swipe.gesture !== 'seek') return;
             if (absDx < commitDistance) return;
-            if (absDx > absDy && event.cancelable) event.preventDefault();
+            if (absDx > absDy && swipe.startedInsideFloatingBox) {
+                stopTouchEventForFloating(event);
+            } else if (absDx > absDy && event.cancelable) event.preventDefault();
             const scale = absDx < vfConfig.shortThreshold ? vfConfig.swipeShort : vfConfig.swipeLong;
             const effectiveMinDistance = Math.max(12, Math.round(vfConfig.minSwipeDistance * 0.45));
             const delta = Math.round((dx > 0 ? dx - effectiveMinDistance : dx + effectiveMinDistance) * scale);
@@ -423,9 +448,12 @@
             }
         };
 
-        const onTouchEnd = () => {
+        const onTouchEnd = (event) => {
             if (!swipe.active || !swipe.video) return;
             const vfConfig = getFeatureConfig();
+            if (swipe.startedInsideFloatingBox) {
+                stopTouchEventForFloating(event);
+            }
             if (!swipe.cancelled && swipe.gesture === 'switch' && swipe.pendingSwitchDir) {
                 emitTouchSwitchVideo(swipe.pendingSwitchDir);
             } else if (!swipe.cancelled && !vfConfig.realtimePreview && swipe.video.isConnected) {
@@ -434,14 +462,14 @@
             resetSwipe();
         };
 
-        document.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+        document.addEventListener('touchstart', onTouchStart, { capture: true, passive: false });
         document.addEventListener('touchmove', onTouchMove, { capture: true, passive: false });
-        document.addEventListener('touchend', onTouchEnd, { capture: true, passive: true });
+        document.addEventListener('touchend', onTouchEnd, { capture: true, passive: false });
 
         return () => {
-            document.removeEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+            document.removeEventListener('touchstart', onTouchStart, { capture: true, passive: false });
             document.removeEventListener('touchmove', onTouchMove, { capture: true, passive: false });
-            document.removeEventListener('touchend', onTouchEnd, { capture: true, passive: true });
+            document.removeEventListener('touchend', onTouchEnd, { capture: true, passive: false });
         };
     };
 
@@ -453,7 +481,6 @@
         getCoord,
         formatTime,
         clamp,
-        onPointer,
         getRect,
         queryAllDeep,
         isDetectableVideo,

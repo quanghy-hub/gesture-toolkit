@@ -198,9 +198,6 @@
         document.addEventListener('cut', onCopy, true);
         document.addEventListener('keyup', onKeyUp, true);
         document.addEventListener('selectionchange', onSelectionChange, true);
-        window.addEventListener('focus', actions.syncClipboardFromSystem, true);
-        document.addEventListener('visibilitychange', actions.syncClipboardFromSystem, true);
-
         return {
             onConfigChange(nextConfig) {
                 config = nextConfig;
@@ -220,8 +217,6 @@
                 document.removeEventListener('cut', onCopy, true);
                 document.removeEventListener('keyup', onKeyUp, true);
                 document.removeEventListener('selectionchange', onSelectionChange, true);
-                window.removeEventListener('focus', actions.syncClipboardFromSystem, true);
-                document.removeEventListener('visibilitychange', actions.syncClipboardFromSystem, true);
                 ui.destroy();
             }
         };

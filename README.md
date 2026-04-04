@@ -1,44 +1,38 @@
-# Gesture Suite Extension
+# Gesture Toolkit
 
-Chromium Extension Manifest V3 được tách module từ các userscript:
+Extension Manifest V3 cho Chromium, tập trung vào 3 nhóm tính năng:
 
-- `forum.js` → forum layout feature
-- `gestures.js` → desktop gestures feature
-- `gsmobile.js` → mobile gestures feature
+- `Gestures`: long press, right click, double right, double tap, edge swipe, pager
+- `Clipboard`: lưu lịch sử text đã copy và dán lại nhanh
+- `Quick Search`: mở nhanh tab tìm kiếm theo văn bản hoặc ảnh
 
-## Kiến trúc
+Repo này là bản thu gọn để chuẩn bị phát hành Chrome Web Store cho `Gesture Toolkit`.
 
-- `background/` service worker xử lý tab actions
-- `shared/` storage, config schema, runtime helpers, tab bridge
-- `content/` các module feature chạy trên page
-- `ui/popup/` quick toggles
-- `icons/` icon của extension cho toolbar/extensions page
+## Cấu trúc
 
-## Cài trên Chromium desktop
+- `background/`: service worker, message bridge, dynamic content script registration
+- `shared/`: config schema, storage, runtime helpers, selection/floating utilities
+- `content/gestures/`: desktop và mobile gestures
+- `content/clipboard/`: clipboard history panel
+- `content/quick-search/`: quick search bubble cho text và image
+- `ui/popup/`: popup cấu hình của extension
+- `docs/chrome-web-store/`: tài liệu phát hành, privacy, listing và checklist
+
+## Cài trên Chromium
 
 1. Mở `chrome://extensions`
-2. Bật **Developer mode**
-3. Chọn **Load unpacked**
-4. Trỏ đến thư mục `extension`
+2. Bật `Developer mode`
+3. Chọn `Load unpacked`
+4. Trỏ tới thư mục repo này
 
-## Cài trên Kiwi Browser
+## Ghi chú phát hành
 
-1. Chép thư mục `extension` lên thiết bị Android
-2. Mở Kiwi → Extensions
-3. Bật developer mode nếu cần
-4. Load unpacked / cài từ thư mục phù hợp với bản Kiwi của bạn
+- Bản store hiện tại không bao gồm `video floating`, `video screenshot`, `YouTube subtitles`, `forum layout`, `inline translate` hay OCR/translation services.
+- Link `Ko-fi` và ví crypto được cấu hình trong `shared/config.js`. Nếu để trống thì nút support tương ứng sẽ không bật.
+- Host blacklist dùng `chrome.scripting.registerContentScripts` để ngăn inject trên host bị loại trừ.
 
-## Ghi chú hiệu năng
+## Roadmap
 
-- Chuyển từ userscript sang extension không tự động tăng tốc nhiều nếu logic DOM vẫn giữ nguyên.
-- Lợi ích chính của bản extension này là kiến trúc sạch hơn, tránh trùng lặp, tách module rõ ràng và dễ tối ưu tiếp.
-- Điểm nóng hiệu năng lớn nhất vẫn là `MutationObserver`, DOM query và layout/reflow, đặc biệt ở forum layout.
-- Forum layout hiện có thêm cơ chế cache theo host để content script biết sớm khi nào cần ẩn layout cũ và chỉ hiện layout mới mượt hơn.
-
-## Ghi chú tương thích
-
-- Gestures không còn chặn riêng `mail.google.com`; mọi site HTTP/HTTPS đều có thể chạy, trừ khi bị xung đột bởi chính trang đó.
-- Runtime vẫn tách desktop/mobile ở mức event listener nội bộ, nhưng không còn khóa cứng theo nhận diện thiết bị để tránh trường hợp máy cảm ứng hoặc môi trường lai làm gestures bị tắt toàn bộ.
-- Settings giờ được gom trực tiếp trong **popup** thành một bảng duy nhất, không cần mở rộng sang trang hay khung nổi riêng.
-- Pager giờ hoạt động theo số lần cuộn được gom trong cửa sổ thời gian: **1 cuộn = 1 trang, 2 cuộn = 2 trang, 3 cuộn = 3 trang, và từ ngưỡng tối đa trở lên sẽ đi thẳng tới đầu/cuối**.
-- Bản này phù hợp để load unpacked trên Chromium desktop và Kiwi; nếu cần phát hành lâu dài, bước tiếp theo nên thêm build pipeline, lint và test checklist.
+- Phase 1: phát hành `Gesture Toolkit` lên Chrome Web Store
+- Phase 2: tách nhóm tính năng video sang extension riêng `Gesture Video`
+- Phase 3: nếu cần monetization cho `video floating`, dùng external billing/license ngoài Chrome Web Store

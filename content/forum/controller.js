@@ -19,6 +19,19 @@
         let domReadyHandler = null;
         let loadHandler = null;
         let resizeBound = false;
+        let observerActive = false;
+
+        const isXenForoDocument = () => {
+            const generator = document.querySelector('meta[name="generator" i]')?.getAttribute('content') || '';
+            if (/xenforo/i.test(generator)) {
+                return true;
+            }
+            return Boolean(
+                document.querySelector(
+                    '.p-pageWrapper, .p-body-inner, .structItemContainer, article.message--post, article.message, [data-template]'
+                )
+            );
+        };
 
         const injectStyles = () => {
             if (styleNode) return;
@@ -57,6 +70,27 @@
 
         const shouldActivate = () => currentConfig.enabled && innerWidth > innerHeight && innerWidth >= currentConfig.minWidth;
 
+        const canMutationAffectForumLayout = (node) => {
+            if (!(node instanceof Element)) return false;
+            return selectors.some(({ container, items }) => {
+                if (node.matches?.(container) || node.matches?.(items)) return true;
+                return !!node.querySelector?.(container) || !!node.querySelector?.(items);
+            });
+        };
+
+        const setObserverActive = (enabled) => {
+            if (!observer) return;
+            if (enabled && !observerActive && document.body) {
+                observer.observe(document.body, { childList: true, subtree: true });
+                observerActive = true;
+                return;
+            }
+            if (!enabled && observerActive) {
+                observer.disconnect();
+                observerActive = false;
+            }
+        };
+
         const removeMasonry = () => {
             activeWrappers.forEach(destroyMasonry);
             activeWrappers = [];
@@ -91,11 +125,13 @@
             syncCache();
 
             if (!shouldActivate()) {
+                setObserverActive(false);
                 showContent();
                 return false;
             }
 
             const applied = applyMasonry();
+            setObserverActive(true);
             if (applied || document.readyState === 'complete') {
                 showContent();
             } else {
@@ -108,11 +144,13 @@
         const debouncedRefresh = debounce(refresh, 180);
         const debouncedApply = debounce(() => {
             if (!shouldActivate()) {
+                setObserverActive(false);
                 showContent();
                 return;
             }
 
             const applied = applyMasonry();
+            setObserverActive(true);
             if (applied) {
                 showContent();
             } else {
@@ -122,8 +160,17 @@
 
         const ensureObserver = () => {
             if (observer || !document.body) return;
-            observer = new MutationObserver(() => debouncedApply());
-            observer.observe(document.body, { childList: true, subtree: true });
+            observer = new MutationObserver((mutations) => {
+                if (!shouldActivate()) return;
+                const hasRelevantMutation = mutations.some((mutation) => {
+                    if (canMutationAffectForumLayout(mutation.target)) return true;
+                    return [...mutation.addedNodes, ...mutation.removedNodes].some((node) => canMutationAffectForumLayout(node));
+                });
+                if (hasRelevantMutation) {
+                    debouncedApply();
+                }
+            });
+            setObserverActive(shouldActivate());
         };
 
         const removeLifecycleListeners = () => {
@@ -144,6 +191,11 @@
         const start = () => {
             if (initialized) return;
             initialized = true;
+
+            if (!isXenForoDocument()) {
+                ext.forumEarlyStyle.remove();
+                return;
+            }
 
             syncCache();
             if (cachedForumConfig?.enabled) {
@@ -187,6 +239,7 @@
                 clearTimeout(startTimer);
                 removeLifecycleListeners();
                 removeMasonry();
+                setObserverActive(false);
                 observer?.disconnect();
                 observer = null;
             }

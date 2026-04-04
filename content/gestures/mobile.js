@@ -12,8 +12,17 @@
             lp: { timer: null, active: false, x: 0, y: 0 },
             dblTap: { last: null },
             dblTapTimer: null,
-            edge: { active: false, lastY: 0, lastTime: 0, velocity: 0 },
-            momentumRAF: null
+            edge: {
+                active: false,
+                lastY: 0,
+                lastTime: 0,
+                velocity: 0,
+                targetScrollTop: 0,
+                renderRAF: null,
+                renderTime: 0
+            },
+            momentumRAF: null,
+            momentumTime: 0
         };
 
         const addListener = (target, event, handler, options) => {
@@ -24,6 +33,11 @@
         const getConfig = () => context.getConfig().gestures.mobile;
         const dist = (x1, y1, x2, y2) => touch.getDistance({ x: x1, y: y1 }, { x: x2, y: y2 });
         const suppress = (ms = 500) => { state.suppressUntil = Date.now() + ms; };
+        const preventDefaultIfCancelable = (event) => {
+            if (event.cancelable) {
+                event.preventDefault();
+            }
+        };
         const isEditable = (el) => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
         const isInteractive = (el) => {
             if (!el) return false;
@@ -72,29 +86,99 @@
         const stopMomentum = () => {
             cancelAnimationFrame(state.momentumRAF);
             state.momentumRAF = null;
+            state.momentumTime = 0;
+        };
+
+        const stopEdgeRender = () => {
+            cancelAnimationFrame(state.edge.renderRAF);
+            state.edge.renderRAF = null;
+            state.edge.renderTime = 0;
+        };
+
+        const clampScrollTop = (value, element) => Math.max(0, Math.min(value, element.scrollHeight - element.clientHeight));
+        const getEdgeStrength = (x) => {
+            const { edge } = getConfig();
+            const width = Math.max(edge.width, 1);
+
+            if (edge.side === 'left') {
+                return Math.max(0, 1 - (x / width));
+            }
+            if (edge.side === 'right') {
+                return Math.max(0, 1 - ((innerWidth - x) / width));
+            }
+
+            if (x <= width) {
+                return Math.max(0, 1 - (x / width));
+            }
+            if (x >= innerWidth - width) {
+                return Math.max(0, 1 - ((innerWidth - x) / width));
+            }
+            return 0;
+        };
+
+        const requestEdgeRender = () => {
+            if (state.edge.renderRAF) return;
+
+            const step = (time) => {
+                const element = document.scrollingElement || document.documentElement;
+                const target = clampScrollTop(state.edge.targetScrollTop, element);
+                const current = element.scrollTop;
+                const delta = target - current;
+
+                if (Math.abs(delta) < 0.5) {
+                    if (current !== target) {
+                        element.scrollTop = target;
+                    }
+                    state.edge.renderRAF = null;
+                    state.edge.renderTime = 0;
+                    return;
+                }
+
+                const deltaTime = state.edge.renderTime ? Math.min(Math.max(time - state.edge.renderTime, 8), 32) : 16;
+                state.edge.renderTime = time;
+                const follow = state.edge.active ? 0.95 : 0.35;
+                const maxStep = Math.max(12, deltaTime * 2.8);
+                const next = current + Math.sign(delta) * Math.min(Math.abs(delta) * follow, Math.abs(delta), maxStep + Math.abs(delta) * 0.25);
+                element.scrollTop = next;
+                state.edge.renderRAF = requestAnimationFrame(step);
+            };
+
+            state.edge.renderRAF = requestAnimationFrame(step);
         };
 
         const startMomentum = (velocity) => {
             stopMomentum();
+            stopEdgeRender();
             const element = document.scrollingElement || document.documentElement;
-            const friction = 0.97;
-            const minVelocity = 0.3;
+            const decayPerFrame = 0.94;
+            const minVelocity = 8;
 
-            const step = () => {
-                if (Math.abs(velocity) < minVelocity) return;
+            const step = (time) => {
+                const deltaTime = state.momentumTime ? Math.min(Math.max(time - state.momentumTime, 8), 34) : 16;
+                state.momentumTime = time;
+                const decay = Math.pow(decayPerFrame, deltaTime / 16);
+                velocity *= decay;
+                if (Math.abs(velocity) < minVelocity) {
+                    state.momentumRAF = null;
+                    state.momentumTime = 0;
+                    return;
+                }
                 const previous = element.scrollTop;
-                element.scrollTop += velocity;
-                if (element.scrollTop === previous) return;
-                velocity *= friction;
+                element.scrollTop = clampScrollTop(previous + ((velocity * deltaTime) / 1000), element);
+                if (element.scrollTop === previous) {
+                    state.momentumRAF = null;
+                    state.momentumTime = 0;
+                    return;
+                }
                 state.momentumRAF = requestAnimationFrame(step);
             };
 
-            step();
+            state.momentumRAF = requestAnimationFrame(step);
         };
 
         const guard = (event) => {
             if (Date.now() < state.suppressUntil) {
-                event.preventDefault();
+                preventDefaultIfCancelable(event);
                 event.stopPropagation();
                 return true;
             }
@@ -107,7 +191,7 @@
 
         addListener(window, 'contextmenu', (event) => {
             if (state.lpFired || state.lp.active || Date.now() < state.suppressUntil) {
-                event.preventDefault();
+                preventDefaultIfCancelable(event);
                 event.stopPropagation();
             }
         }, true);
@@ -128,7 +212,16 @@
             const now = Date.now();
 
             if (isInEdgeZone(touchPoint.clientX) && !event.target.closest?.('#fvp-container')) {
-                state.edge = { active: true, lastY: touchPoint.clientY, lastTime: now, velocity: 0 };
+                const element = document.scrollingElement || document.documentElement;
+                state.edge = {
+                    active: true,
+                    lastY: touchPoint.clientY,
+                    lastTime: now,
+                    velocity: 0,
+                    targetScrollTop: element.scrollTop,
+                    renderRAF: state.edge.renderRAF,
+                    renderTime: state.edge.renderTime
+                };
                 return;
             }
 
@@ -136,7 +229,7 @@
                 const last = state.dblTap.last;
                 const timeSinceLast = last ? now - last.time : Infinity;
                 if (last && last.ended && timeSinceLast >= 100 && timeSinceLast < cfg.dblTap.ms && dist(touchPoint.clientX, touchPoint.clientY, last.x, last.y) < TOLERANCE.tap) {
-                    event.preventDefault();
+                    preventDefaultIfCancelable(event);
                     event.stopPropagation();
                     state.dblTap.last = null;
                     closeTab();
@@ -190,20 +283,32 @@
             const touchPoint = event.touches[0];
             const now = Date.now();
             const deltaY = state.edge.lastY - touchPoint.clientY;
-            const deltaTime = now - state.edge.lastTime;
+            const deltaTime = Math.min(Math.max(now - state.edge.lastTime, 8), 32);
             if (deltaTime > 0) {
-                state.edge.velocity = ((deltaY * cfg.edge.speed) / deltaTime) * 16;
+                const edgeStrength = 1 + (getEdgeStrength(touchPoint.clientX) * 1.1);
+                const moveBoost = 1 + Math.min(Math.abs(deltaY) / 14, 1.8);
+                const scrollDelta = deltaY * cfg.edge.speed * edgeStrength * moveBoost * 1.35;
+                const instantVelocity = (scrollDelta / deltaTime) * 1000;
+                state.edge.velocity = (state.edge.velocity * 0.7) + (instantVelocity * 0.3);
+                const element = document.scrollingElement || document.documentElement;
+                state.edge.targetScrollTop = clampScrollTop(state.edge.targetScrollTop + scrollDelta, element);
+                requestEdgeRender();
             }
 
             state.edge.lastY = touchPoint.clientY;
             state.edge.lastTime = now;
-            (document.scrollingElement || document.documentElement).scrollTop += deltaY * cfg.edge.speed;
-            event.preventDefault();
+            preventDefaultIfCancelable(event);
         }, { capture: true, passive: false });
 
         addListener(window, 'touchend', () => {
             cancelLongPress();
-            if (state.edge.active && Math.abs(state.edge.velocity) > 1) {
+            if (state.edge.active) {
+                const element = document.scrollingElement || document.documentElement;
+                const settledScrollTop = clampScrollTop(state.edge.targetScrollTop, element);
+                element.scrollTop = settledScrollTop;
+                state.edge.targetScrollTop = settledScrollTop;
+            }
+            if (state.edge.active && Math.abs(state.edge.velocity) > 120) {
                 startMomentum(state.edge.velocity);
             }
 
@@ -226,12 +331,14 @@
         addListener(window, 'touchcancel', () => {
             cancelLongPress();
             state.edge.active = false;
+            const element = document.scrollingElement || document.documentElement;
+            state.edge.targetScrollTop = element.scrollTop;
             state.dblTap.last = null;
         }, true);
 
         addListener(window, 'click', (event) => {
             if (!state.lpFired) return;
-            event.preventDefault();
+            preventDefaultIfCancelable(event);
             event.stopPropagation();
             state.lpFired = false;
         }, true);
@@ -241,6 +348,7 @@
                 cancelLongPress();
                 clearTimeout(state.dblTapTimer);
                 stopMomentum();
+                stopEdgeRender();
                 listeners.splice(0).forEach((remove) => remove());
             }
         };

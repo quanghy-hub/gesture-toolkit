@@ -10,7 +10,7 @@
     const createFallbackIcon = (label) => {
         const fallback = document.createElement('span');
         fallback.className = 'gesture-quick-search-glyph';
-        fallback.textContent = label?.trim()?.[0] || '🔗';
+        fallback.textContent = String(label || '🔗').trim().slice(0, 2) || '🔗';
         return fallback;
     };
 
@@ -118,16 +118,17 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                width: 18px;
+                min-width: 18px;
                 height: 18px;
                 flex: 0 0 auto;
                 color: #eee;
-                font-family: 'Segoe UI Symbol', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
-                font-size: 18px;
-                font-weight: 400;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 10px;
+                font-weight: 700;
                 line-height: 1;
                 text-align: center;
                 letter-spacing: 0;
+                text-transform: uppercase;
             }
         `;
 

@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gesture</title>
+  <title>Gesture Toolkit</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 
@@ -12,7 +12,7 @@
   <main class="popup">
     <header class="header">
       <div>
-        <h1>Gesture</h1>
+        <h1>Gesture Toolkit</h1>
         <p id="current-host">Đang tải...</p>
       </div>
       <div class="header-actions">
@@ -20,7 +20,19 @@
       </div>
     </header>
 
-    <!-- Gestures -->
+    <section class="card">
+      <h2 class="card-title">Host Blacklist</h2>
+      <p id="host-blacklist-note" class="section-note">Có thể tắt toàn bộ toolkit trên host hiện tại.</p>
+      <div class="table">
+        <div class="item">
+          <span class="label-main">Current host</span>
+          <span class="label-sub">Disable</span>
+          <span class="param"><span id="host-blacklist-label" class="param-name">Không có host</span></span>
+          <span class="toggle"><input id="host-blacklist-toggle" type="checkbox" aria-label="Tắt toolkit trên host hiện tại"></span>
+        </div>
+      </div>
+    </section>
+
     <section class="card">
       <h2 class="card-title card-title-with-toggle"><span>Gestures</span><input id="feature-gestures-enabled" type="checkbox" aria-label="Bật Gestures"></h2>
       <div class="table">
@@ -102,7 +114,6 @@
       </div>
     </section>
 
-    <!-- Clipboard -->
     <section class="card">
       <h2 class="card-title card-title-with-toggle"><span>Clipboard</span><input id="feature-clipboard-enabled" type="checkbox" aria-label="Bật Clipboard"></h2>
       <div class="table">
@@ -123,89 +134,6 @@
       </div>
     </section>
 
-    <!-- Floating Video -->
-    <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Floating Video</span><input id="feature-video-floating-enabled" type="checkbox" aria-label="Bật Floating Video"></h2>
-      <div class="table">
-        <div class="item">
-          <span class="label-main">Swipe</span>
-          <span class="label-sub">Min</span>
-          <span class="param"><span class="param-name">Px</span><input id="video-floating-min-distance" class="num xs" type="number"
-              min="10" max="200" step="1"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Short</span>
-          <span class="param"><span class="param-name">Rate</span><input id="video-floating-swipe-short" class="num xs" type="number"
-              min="0.05" max="1" step="0.05"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Long</span>
-          <span class="param"><span class="param-name">Rate</span><input id="video-floating-swipe-long" class="num xs" type="number"
-              min="0.05" max="1" step="0.05"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Switch</span>
-          <span class="param"><span class="param-name">Px</span><input id="video-floating-short-threshold" class="num xs" type="number"
-              min="50" max="1000" step="10"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Gesture</span>
-          <span class="label-sub">Vertical</span>
-          <span class="param"><span class="param-name">Px</span><input id="video-floating-vertical-tolerance" class="num xs" type="number"
-              min="20" max="300" step="5"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Diagonal</span>
-          <span class="param"><span class="param-name">Rate</span><input id="video-floating-diagonal-threshold" class="num xs" type="number"
-              min="0.5" max="5" step="0.05"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Preview</span>
-          <span class="label-sub">Realtime</span>
-          <span class="param"><span class="param-name">State</span><span class="param-value">On/Off</span></span>
-          <span class="toggle"><input id="video-floating-realtime-preview" type="checkbox"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Throttle</span>
-          <span class="param"><span class="param-name">Ms</span><input id="video-floating-throttle" class="num xs" type="number"
-              min="0" max="100" step="5"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Notice</span>
-          <span class="label-sub">Font</span>
-          <span class="param"><span class="param-name">Px</span><input id="video-floating-notice-font-size" class="num xs" type="number"
-              min="8" max="48" step="1"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Video Screenshot -->
-    <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Video Screenshot</span><input id="feature-video-screenshot-enabled" type="checkbox" aria-label="Bật Video Screenshot"></h2>
-      <div class="table">
-        <div class="item">
-          <span class="label-main">Capture</span>
-          <span class="label-sub">Button</span>
-          <span class="param"><span class="param-name">Show</span></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Quick Search -->
     <section class="card">
       <h2 class="card-title card-title-with-toggle"><span>Quick Search</span><input id="feature-quick-search-enabled" type="checkbox" aria-label="Bật Quick Search"></h2>
       <div class="table">
@@ -217,233 +145,45 @@
           <span class="toggle toggle-empty"></span>
         </div>
         <div class="item">
-          <span class="label-main">Image</span>
-          <span class="label-sub">Search</span>
-          <span class="param"><span class="param-name">Show</span><span class="param-value">On/Off</span></span>
+          <span class="label-main">Image search</span>
+          <span class="label-sub"></span>
+          <span class="param"></span>
           <span class="toggle"><input id="quick-search-image-search-enabled" type="checkbox"></span>
         </div>
       </div>
       <div class="provider-picker" id="quick-search-provider-picker">
-        <label class="provider-tile"><input id="quick-search-provider-google" type="checkbox"><img src="https://www.google.com/favicon.ico" alt=""><span class="provider-tile-label">Google</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-perplexity" type="checkbox"><img src="https://www.google.com/s2/favicons?domain=perplexity.ai&sz=32" alt=""><span class="provider-tile-label">Perplexity</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-chatgpt" type="checkbox"><img src="https://www.google.com/s2/favicons?domain=chatgpt.com&sz=32" alt=""><span class="provider-tile-label">ChatGPT</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-gemini" type="checkbox"><img src="https://www.google.com/s2/favicons?domain=gemini.google.com&sz=32" alt=""><span class="provider-tile-label">Gemini</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-claude" type="checkbox"><img src="https://www.google.com/s2/favicons?domain=claude.ai&sz=32" alt=""><span class="provider-tile-label">Claude</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-copilot" type="checkbox"><img src="https://www.google.com/s2/favicons?domain=copilot.microsoft.com&sz=32" alt=""><span class="provider-tile-label">Copilot</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-bing" type="checkbox"><img src="https://www.bing.com/favicon.ico" alt=""><span class="provider-tile-label">Bing</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-duckduckgo" type="checkbox"><img src="https://duckduckgo.com/favicon.ico" alt=""><span class="provider-tile-label">DuckDuckGo</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-youtube" type="checkbox"><img src="https://www.youtube.com/favicon.ico" alt=""><span class="provider-tile-label">YouTube</span></label>
-        <label class="provider-tile"><input id="quick-search-provider-google-images" type="checkbox"><img src="https://www.google.com/favicon.ico" alt=""><span class="provider-tile-label">Google Images</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-google" type="checkbox"><span class="provider-tile-mark">G</span><span class="provider-tile-label">Google</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-perplexity" type="checkbox"><span class="provider-tile-mark">P</span><span class="provider-tile-label">Perplexity</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-chatgpt" type="checkbox"><span class="provider-tile-mark">CG</span><span class="provider-tile-label">ChatGPT</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-gemini" type="checkbox"><span class="provider-tile-mark">Ge</span><span class="provider-tile-label">Gemini</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-claude" type="checkbox"><span class="provider-tile-mark">Cl</span><span class="provider-tile-label">Claude</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-copilot" type="checkbox"><span class="provider-tile-mark">Co</span><span class="provider-tile-label">Copilot</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-bing" type="checkbox"><span class="provider-tile-mark">B</span><span class="provider-tile-label">Bing</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-duckduckgo" type="checkbox"><span class="provider-tile-mark">DD</span><span class="provider-tile-label">DuckDuckGo</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-youtube" type="checkbox"><span class="provider-tile-mark">YT</span><span class="provider-tile-label">YouTube</span></label>
+        <label class="provider-tile"><input id="quick-search-provider-google-images" type="checkbox"><span class="provider-tile-mark">GI</span><span class="provider-tile-label">Google Images</span></label>
       </div>
     </section>
 
-    <!-- Inline Translate -->
     <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Inline Translate</span><input id="feature-inline-translate-enabled" type="checkbox" aria-label="Bật Inline Translate"></h2>
-      <div class="table">
-        <div class="item">
-          <span class="label-main">Hotkey</span>
-          <span class="label-sub">Key</span>
-          <span class="param"><span class="param-name">Key</span><select id="inline-translate-hotkey">
-              <option value="f2">F2</option>
-              <option value="f4">F4</option>
-              <option value="f8">F8</option>
-            </select></span>
-          <span class="toggle"><input id="inline-translate-hotkey-enabled" type="checkbox"></span>
+      <h2 class="card-title">Support</h2>
+      <p id="support-note" class="section-note">Open the support page or the premium unlock page.</p>
+      <div id="support-crypto-block" class="support-crypto" hidden>
+        <div class="support-crypto-header">
+          <span id="support-crypto-label" class="support-crypto-label">Crypto Wallet</span>
+          <span id="support-crypto-network" class="support-crypto-network"></span>
         </div>
-        <div class="item">
-          <span class="label-main">Swipe</span>
-          <span class="label-sub">State</span>
-          <span class="param"><span class="param-name">State</span><span class="param-value">On/Off</span></span>
-          <span class="toggle"><input id="inline-translate-swipe-enabled" type="checkbox"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Direction</span>
-          <span class="param"><span class="param-name">Swipe</span><select id="inline-translate-swipe-dir">
-              <option value="both">Both</option>
-              <option value="left">Left</option>
-              <option value="right">Right</option>
-            </select></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Distance</span>
-          <span class="param"><span class="param-name">Px</span><input id="inline-translate-swipe-px" class="num xs" type="number"
-              min="20" max="240" step="5"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Font</span>
-          <span class="label-sub">Scale</span>
-          <span class="param"><span class="param-name">Scale</span><input id="inline-translate-font-scale" class="num xs" type="number"
-              min="0.5" max="2" step="0.05"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Color</span>
-          <span class="label-sub">Muted</span>
-          <span class="param"><span class="param-name">Muted</span><input id="inline-translate-muted-color" type="color"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
+        <div id="support-crypto-address" class="support-crypto-address"></div>
+      </div>
+      <div class="section-actions">
+        <button id="support-open-support" class="secondary" type="button" hidden>Open Support Page</button>
+        <button id="support-open-premium" class="primary" type="button" hidden>Open Premium</button>
+        <button id="support-copy-crypto" class="secondary" type="button" hidden>Copy Wallet</button>
       </div>
     </section>
-
-    <!-- YouTube Subtitles -->
-    <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>YouTube Subtitles</span><input id="feature-youtube-subtitles-enabled" type="checkbox" aria-label="Bật YouTube Subtitles"></h2>
-      <div class="table">
-        <div class="item">
-          <span class="label-main">Target</span>
-          <span class="label-sub">Lang</span>
-          <span class="param"><span class="param-name">Lang</span><input id="youtube-subtitles-target-lang" class="num small" type="text"
-              maxlength="8"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Original</span>
-          <span class="label-sub">Font</span>
-          <span class="param"><span class="param-name">Font</span><input id="youtube-subtitles-font-size" class="num xs" type="number"
-              min="12" max="32"></span>
-          <span class="toggle"><input id="youtube-subtitles-show-original" type="checkbox"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Translated</span>
-          <span class="label-sub">Font</span>
-          <span class="param"><span class="param-name">Font</span><input id="youtube-subtitles-translated-font-size" class="num xs" type="number"
-              min="12" max="32"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Original</span>
-          <span class="label-sub">Color</span>
-          <span class="param"><span class="param-name">Color</span><input id="youtube-subtitles-original-color" type="color"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Translated</span>
-          <span class="label-sub">Color</span>
-          <span class="param"><span class="param-name">Color</span><input id="youtube-subtitles-translated-color" type="color"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item">
-          <span class="label-main">Display</span>
-          <span class="label-sub">Mode</span>
-          <span class="param"><span class="param-name">Mode</span><select id="youtube-subtitles-display-mode">
-              <option value="compact">Compact</option>
-              <option value="full">Full</option>
-            </select></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- API Services -->
-    <section class="card">
-      <h2 class="card-title">API Services</h2>
-      <div class="table table-api-services">
-        <div class="item">
-          <span class="label-main">Translate</span>
-          <span class="label-sub">Provider</span>
-          <span class="param"><select id="api-translate-provider"></select></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Fallback</span>
-          <span class="param"><select id="api-translate-fallback-provider"></select></span>
-          <span class="toggle"><input id="api-translate-fallback-enabled" type="checkbox"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">API key</span>
-          <span class="param"><input id="api-translate-api-key" type="text" autocomplete="off"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Fallback key</span>
-          <span class="param"><input id="api-translate-fallback-api-key" type="text" autocomplete="off"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-
-        <div class="item">
-          <span class="label-main">OCR</span>
-          <span class="label-sub">Provider</span>
-          <span class="param"><select id="api-ocr-provider"></select></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Fallback</span>
-          <span class="param"><select id="api-ocr-fallback-provider"></select></span>
-          <span class="toggle"><input id="api-ocr-fallback-enabled" type="checkbox"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">API key</span>
-          <span class="param"><input id="api-ocr-api-key" type="text" autocomplete="off"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Fallback key</span>
-          <span class="param"><input id="api-ocr-fallback-api-key" type="text" autocomplete="off"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Forum -->
-    <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Forum</span><input id="feature-forum-enabled" type="checkbox" aria-label="Bật Forum"></h2>
-      <div class="table">
-        <div class="item">
-          <span class="label-main">Wide</span>
-          <span class="label-sub">Mode</span>
-          <span class="param"><span class="param-name">Wide</span><span class="param-value">On/Off</span></span>
-          <span class="toggle"><input id="forum-wide" type="checkbox"></span>
-        </div>
-
-        <div class="item host-only">
-          <span class="label-main">Min width</span>
-          <span class="label-sub">Px</span>
-          <span class="param"><span class="param-name">Px</span><input id="forum-min-width" class="num" type="number"
-              min="0" max="4000" step="50"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub host-only">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Gap</span>
-          <span class="param"><span class="param-name">Px</span><input id="forum-gap" class="num xs" type="number"
-              min="0" max="24"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub host-only">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Fade</span>
-          <span class="param"><span class="param-name">Ms</span><input id="forum-fade" class="num xs" type="number"
-              min="0" max="1000"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-        <div class="item item-sub host-only">
-          <span class="label-main label-main-empty"></span>
-          <span class="label-sub">Delay</span>
-          <span class="param"><span class="param-name">Ms</span><input id="forum-delay" class="num xs" type="number"
-              min="0" max="1000"></span>
-          <span class="toggle toggle-empty"></span>
-        </div>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <p id="status" class="hint">Sẵn sàng.</p>
-    </footer>
   </main>
 
   <script src="../../shared/namespace.js"></script>
-  <script src="../../shared/api-services.js"></script>
   <script src="../../shared/config.js"></script>
   <script src="../../shared/storage.js"></script>
   <script src="popup.js"></script>

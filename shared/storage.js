@@ -119,20 +119,6 @@
         });
     };
 
-    const saveClipboardTriggerPosition = async (position) => {
-        if (!position || typeof position !== 'object') return;
-        const x = Number(position.x);
-        const y = Number(position.y);
-        if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-        return updateConfig((draft) => {
-            draft.clipboard.triggerPosition = {
-                x: Math.max(0, Math.round(x)),
-                y: Math.max(0, Math.round(y))
-            };
-            return draft;
-        });
-    };
-
     const saveVideoLayout = async (layout) => {
         if (!layout || typeof layout !== 'object') return;
         return updateConfig((draft) => {
@@ -148,18 +134,6 @@
         });
     };
 
-    const saveVideoIconPos = async (pos) => {
-        if (!pos || typeof pos !== 'object') return;
-        return updateConfig((draft) => {
-            draft.videoFloating = draft.videoFloating || {};
-            draft.videoFloating.iconPos = {
-                top: pos.top,
-                left: pos.left
-            };
-            return draft;
-        });
-    };
-
     ext.shared.storage = {
         getConfig,
         saveConfig,
@@ -168,8 +142,6 @@
         togglePinItem,
         removeClipboardItem,
         clearClipboardHistory,
-        saveClipboardTriggerPosition,
-        saveVideoLayout,
-        saveVideoIconPos
+        saveVideoLayout
     };
 })();

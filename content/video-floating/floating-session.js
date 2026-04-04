@@ -14,8 +14,9 @@
             ensureLayoutReady,
             formatTime,
             applyBoxLayout,
+            updateLeftPanelLayout,
             updateVolUI,
-            updatePlayPauseUI,
+            updatePlaybackOverlayUI,
             postToFloatedIframe
         } = deps;
 
@@ -66,12 +67,14 @@
             if (ctx.floatedIframe || !video) {
                 badge.hidden = true;
                 badge.textContent = '';
+                updateLeftPanelLayout?.();
                 return;
             }
             const order = getVideoOrderInfo(video);
             badge.hidden = false;
             badge.textContent = `${order.index}/${order.total}`;
             badge.title = `Video ${order.index} / ${order.total}`;
+            updateLeftPanelLayout?.();
         };
 
         const getOrderedVideoSequence = () => {
@@ -137,7 +140,8 @@
 
         const bindCurrentVideo = (video) => {
             if (!video) return;
-            video.onplay = video.onpause = updatePlayPauseUI;
+            video.onplay = () => updatePlaybackOverlayUI?.();
+            video.onpause = () => updatePlaybackOverlayUI?.();
             video.onended = () => switchVid(1);
         };
 
@@ -148,8 +152,8 @@
             ctx.rotationAngle = 0;
             applyTransform();
             updateVolUI();
-            updatePlayPauseUI();
             updateVideoOrderUI(video);
+            updatePlaybackOverlayUI?.();
             startProgressLoop();
             bindCurrentVideo(video);
             video.play().catch(() => { });
@@ -238,7 +242,9 @@
             ctx.videoSequence = [];
             ctx.zoomIdx = 0;
             ctx.rotationAngle = 0;
+            updateLeftPanelLayout?.();
             updateVideoOrderUI(null);
+            updatePlaybackOverlayUI?.();
         };
 
         const switchVid = (dir) => {
@@ -349,6 +355,7 @@
             ctx.menuRef?.hide();
             applyBoxLayout(loadLayout());
             updateVideoOrderUI(null);
+            updatePlaybackOverlayUI?.();
             ensureLayoutReady().then((layout) => {
                 if (ctx.floatedIframe === iframe && layout) applyBoxLayout(layout);
             });
@@ -379,6 +386,7 @@
             ctx.box.style.display = 'flex';
             ctx.menuRef?.hide();
             applyBoxLayout(loadLayout());
+            updatePlaybackOverlayUI?.();
             ensureLayoutReady().then((layout) => {
                 if (ctx.curVid === video && layout) applyBoxLayout(layout);
             });

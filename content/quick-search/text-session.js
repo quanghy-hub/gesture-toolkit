@@ -50,26 +50,31 @@
 
     quickSearch.textSession = {
         getSelectionSnapshot() {
-            const selection = window.getSelection?.();
-            if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+            try {
+                const selection = window.getSelection?.();
+                if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+                    return null;
+                }
+                const text = String(selection.toString() || '').trim();
+                if (!text) {
+                    return null;
+                }
+                const range = selection.getRangeAt(0);
+                const anchor = getRangeAnchor(range);
+                if (!anchor) {
+                    return null;
+                }
+                return {
+                    range,
+                    text,
+                    key: getSelectionKey(range, text),
+                    x: anchor.x,
+                    y: anchor.y
+                };
+            } catch {
+                // Some pages mutate selection/ranges during layout updates; skip this snapshot.
                 return null;
             }
-            const text = String(selection.toString() || '').trim();
-            if (!text) {
-                return null;
-            }
-            const range = selection.getRangeAt(0);
-            const anchor = getRangeAnchor(range);
-            if (!anchor) {
-                return null;
-            }
-            return {
-                range,
-                text,
-                key: getSelectionKey(range, text),
-                x: anchor.x,
-                y: anchor.y
-            };
         },
         selectAllPageText() {
             const activeElement = document.activeElement;

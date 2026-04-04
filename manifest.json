@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Gesture",
-    "version": "1.1.0",
-    "description": "Forum layout plus desktop and mobile gestures for Chromium and Kiwi Browser.",
+    "name": "Gesture Toolkit",
+    "version": "2.0.0",
+    "description": "Quick web gestures, clipboard history, and quick search tools for Chromium.",
     "icons": {
         "16": "icons/icon16.png",
         "32": "icons/icon32.png",
@@ -12,7 +12,7 @@
     "permissions": [
         "storage",
         "tabs",
-        "downloads"
+        "scripting"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -21,95 +21,12 @@
         "service_worker": "background/service-worker.js"
     },
     "action": {
-        "default_title": "Gesture",
+        "default_title": "Gesture Toolkit",
         "default_popup": "ui/popup/popup.html",
         "default_icon": {
             "16": "icons/icon16.png",
             "32": "icons/icon32.png",
             "48": "icons/icon48.png"
         }
-    },
-    "content_scripts": [
-        {
-            "matches": [
-                "<all_urls>"
-            ],
-            "all_frames": true,
-            "css": [
-                "content/video-floating/styles.css",
-                "content/google-search/styles.css",
-                "content/clipboard/styles.css"
-            ],
-            "js": [
-                "shared/namespace.js",
-                "shared/api-services.js",
-                "shared/config.js",
-                "shared/storage.js",
-                "shared/runtime.js",
-                "shared/tab-actions-client.js",
-                "shared/extension-ui-guard.js",
-                "shared/viewport-core.js",
-                "shared/floating-core.js",
-                "shared/touch-core.js",
-                "shared/toast-core.js",
-                "shared/selection-core.js",
-                "shared/ui-core.js",
-                "shared/dom-utils.js",
-                "shared/ocr-core.js",
-                "content/forum/styles.js",
-                "content/forum/layout.js",
-                "content/forum/cache.js",
-                "content/forum/early-style.js",
-                "content/forum/controller.js",
-                "content/forum/index.js",
-                "content/gestures/desktop.js",
-                "content/gestures/mobile.js",
-                "content/gestures/index.js",
-                "content/clipboard/constants.js",
-                "content/clipboard/panel-data.js",
-                "content/clipboard/actions.js",
-                "content/clipboard/ui.js",
-                "content/clipboard/controller.js",
-                "content/clipboard/index.js",
-                "content/google-search/index.js",
-                "content/quick-search/constants.js",
-                "content/quick-search/ui.js",
-                "content/quick-search/text-session.js",
-                "content/quick-search/image-session.js",
-                "content/quick-search/actions.js",
-                "content/quick-search/controller.js",
-                "content/quick-search/index.js",
-                "shared/translate-core.js",
-                "content/inline-translate/constants.js",
-                "content/inline-translate/dom.js",
-                "content/inline-translate/actions.js",
-                "content/inline-translate/controller.js",
-                "content/inline-translate/index.js",
-                "content/video-screenshot/index.js",
-                "content/video-floating/constants.js",
-                "content/video-floating/helpers.js",
-                "content/video-floating/iframe-mode.js",
-                "content/video-floating/floating-session.js",
-                "content/video-floating/seek-controller.js",
-                "content/video-floating/ui-controls.js",
-                "content/video-floating/top-frame.js",
-                "content/video-floating/index.js",
-                "content/youtube-subtitles/constants.js",
-                "content/youtube-subtitles/dom.js",
-                "content/youtube-subtitles/caption-source.js",
-                "content/youtube-subtitles/translator.js",
-                "content/youtube-subtitles/controller.js",
-                "content/youtube-subtitles/index.js",
-                "content/bootstrap.js"
-            ],
-            "run_at": "document_start"
-        },
-        {
-            "matches": ["<all_urls>"],
-            "all_frames": true,
-            "js": ["content/video-floating/page-api.js"],
-            "run_at": "document_start",
-            "world": "MAIN"
-        }
-    ]
+    }
 }

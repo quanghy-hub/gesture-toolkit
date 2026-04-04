@@ -4,7 +4,8 @@
 
     const controllers = [];
     const state = {
-        config: null
+        config: null,
+        active: false
     };
 
     const context = {
@@ -14,6 +15,7 @@
         tabActions: ext.shared.tabActions,
         configUtils: ext.shared.config
     };
+    const isCurrentHostExcluded = () => ext.shared.config.isHostExcluded(state.config, location.hostname);
 
     const getFeatureName = (feature, index) => {
         if (!feature || typeof feature !== 'object') {
@@ -22,16 +24,25 @@
         return feature.name || feature.id || feature.key || feature.title || `feature-${index}`;
     };
 
+    const destroyControllers = () => {
+        while (controllers.length) {
+            const controller = controllers.pop();
+            try {
+                controller?.destroy?.();
+            } catch (error) {
+                console.error('[GestureExtension] Failed to destroy feature controller', error);
+            }
+        }
+        state.active = false;
+    };
+
     const activateFeatures = () => {
+        if (state.active || isCurrentHostExcluded()) {
+            return;
+        }
         const features = [
-            ext.features.clipboardStyles,
             ext.features.clipboard,
-            ext.features.googleSearch,
             ext.features.quickSearch,
-            ext.features.inlineTranslate,
-            ext.features.videoScreenshot,
-            ext.features.youtubeSubtitles,
-            ext.features.forum,
             ext.features.gesturesDesktop,
             ext.features.gesturesMobile
         ].filter(Boolean);
@@ -53,29 +64,41 @@
                 console.error(`[GestureExtension] Failed to initialize feature: ${featureName}`, error);
             }
         });
+        state.active = true;
+    };
+
+    const syncFeatureActivation = () => {
+        if (isCurrentHostExcluded()) {
+            destroyControllers();
+            return;
+        }
+        if (!state.active) {
+            activateFeatures();
+            return;
+        }
+        for (const controller of controllers) {
+            try {
+                controller.onConfigChange?.(state.config);
+            } catch (error) {
+                console.error('[GestureExtension] Failed to refresh feature config', error);
+            }
+        }
     };
 
     ext.shared.storage.getConfig().then((config) => {
         state.config = config;
-        activateFeatures();
+        syncFeatureActivation();
     }).catch((error) => {
         console.error('[GestureExtension] Failed to load config', error);
         state.config = normalizeConfig();
-        activateFeatures();
+        syncFeatureActivation();
     });
 
     if (globalThis.chrome?.storage?.onChanged?.addListener) {
         chrome.storage.onChanged.addListener((changes, areaName) => {
             if (areaName !== 'local' || !changes[STORAGE_KEY]) return;
             state.config = normalizeConfig(changes[STORAGE_KEY].newValue);
-
-            for (const controller of controllers) {
-                try {
-                    controller.onConfigChange?.(state.config);
-                } catch (error) {
-                    console.error('[GestureExtension] Failed to refresh feature config', error);
-                }
-            }
+            syncFeatureActivation();
         });
     }
 })();

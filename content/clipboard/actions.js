@@ -40,23 +40,6 @@
             } catch (error) {
                 console.error('[GestureExtension] remove clipboard item failed', error);
             }
-        },
-        async syncClipboardFromSystem() {
-            const permissionsPolicy = document.permissionsPolicy || document.featurePolicy;
-            const clipboardReadAllowed = typeof permissionsPolicy?.allowsFeature === 'function'
-                ? permissionsPolicy.allowsFeature('clipboard-read')
-                : true;
-            if (!clipboardReadAllowed || !navigator.clipboard?.readText || document.visibilityState !== 'visible') {
-                return;
-            }
-            try {
-                const text = await navigator.clipboard.readText();
-                if (text && text.trim() && text.trim() !== getCopiedTextCache()) {
-                    await this.saveCopiedText(text);
-                }
-            } catch {
-                // Ignore permissions errors
-            }
         }
     });
 })();

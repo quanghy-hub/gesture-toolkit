@@ -20,30 +20,28 @@
 
     quickSearch.DEFAULT_SETTINGS = Object.freeze({
         providers: [
-            { id: 'google', name: 'Google', url: 'https://www.google.com/search?q={{q}}', icon: 'https://www.google.com/favicon.ico' },
-            { id: 'perplexity', name: 'Perplexity', url: 'https://www.perplexity.ai/search?q={{q}}', icon: 'https://www.google.com/s2/favicons?domain=perplexity.ai&sz=32' },
-            { id: 'chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com/?q={{q}}', icon: 'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=32' },
-            { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com/app?q={{q}}', icon: 'https://www.google.com/s2/favicons?domain=gemini.google.com&sz=32' },
-            { id: 'claude', name: 'Claude', url: 'https://claude.ai/new?q={{q}}', icon: 'https://www.google.com/s2/favicons?domain=claude.ai&sz=32' },
-            { id: 'copilot', name: 'Copilot', url: 'https://copilot.microsoft.com/?q={{q}}', icon: 'https://www.google.com/s2/favicons?domain=copilot.microsoft.com&sz=32' },
-            { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q={{q}}', icon: 'https://www.bing.com/favicon.ico' },
-            { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q={{q}}', icon: 'https://duckduckgo.com/favicon.ico' },
-            { id: 'youtube', name: 'YouTube', url: 'https://www.youtube.com/results?search_query={{q}}', icon: 'https://www.youtube.com/favicon.ico' },
-            { id: 'google-images', name: 'Ảnh Google', url: 'https://www.google.com/search?tbm=isch&q={{q}}', icon: 'https://www.google.com/favicon.ico' }
+            { id: 'google', name: 'Google', url: 'https://www.google.com/search?q={{q}}', glyph: 'G' },
+            { id: 'perplexity', name: 'Perplexity', url: 'https://www.perplexity.ai/search?q={{q}}', glyph: 'P' },
+            { id: 'chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com/?q={{q}}', glyph: 'CG' },
+            { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com/app?q={{q}}', glyph: 'Ge' },
+            { id: 'claude', name: 'Claude', url: 'https://claude.ai/new?q={{q}}', glyph: 'Cl' },
+            { id: 'copilot', name: 'Copilot', url: 'https://copilot.microsoft.com/?q={{q}}', glyph: 'Co' },
+            { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q={{q}}', glyph: 'B' },
+            { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q={{q}}', glyph: 'DD' },
+            { id: 'youtube', name: 'YouTube', url: 'https://www.youtube.com/results?search_query={{q}}', glyph: 'YT' },
+            { id: 'google-images', name: 'Ảnh Google', url: 'https://www.google.com/search?tbm=isch&q={{q}}', glyph: 'GI' }
         ],
         imageProviders: [
-            { id: 'google-lens', name: 'Google Lens', url: 'https://lens.google.com/uploadbyurl?url={{img}}', icon: 'https://www.google.com/favicon.ico' },
-            { id: 'bing-visual', name: 'Bing Visual', url: 'https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIIDP&q=imgurl:{{img}}', icon: 'https://www.bing.com/favicon.ico' },
-            { id: 'yandex-images', name: 'Yandex Images', url: 'https://yandex.com/images/search?rpt=imageview&url={{img}}', icon: 'https://yandex.com/favicon.ico' }
+            { id: 'google-lens', name: 'Google Lens', url: 'https://lens.google.com/uploadbyurl?url={{img}}', glyph: 'GL' },
+            { id: 'bing-visual', name: 'Bing Visual', url: 'https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIIDP&q=imgurl:{{img}}', glyph: 'BV' },
+            { id: 'yandex-images', name: 'Yandex Images', url: 'https://yandex.com/images/search?rpt=imageview&url={{img}}', glyph: 'YI' }
         ]
     });
 
     quickSearch.QUICK_GLYPHS = Object.freeze({
         copy: '⧉',
         selectAll: '⊞',
-        translate: '文',
         saveImage: '↓',
-        ocr: 'T',
         copyUrl: '⧉'
     });
 

@@ -42,7 +42,6 @@
                 cleanupSwipeSeek?.();
                 controller?.destroy?.();
                 controller = null;
-                window.__gestureVideoFloatingMounted = false;
                 window.__gestureVideoFloatingController = null;
             }
         };
@@ -52,7 +51,6 @@
         if (window.__gestureVideoFloatingController) {
             return window.__gestureVideoFloatingController;
         }
-        window.__gestureVideoFloatingMounted = true;
         window.__gestureVideoFloatingController = createMountedController();
         return window.__gestureVideoFloatingController;
     };
@@ -63,6 +61,4 @@
             return ensureStarted();
         }
     };
-
-    ensureStarted();
 })();

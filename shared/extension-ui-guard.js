@@ -2,13 +2,8 @@
     const ext = globalThis.GestureExtension;
 
     const BASE_EXTENSION_UI_SELECTORS = [
-        '#fvp-master-icon',
-        '#fvp-menu',
-        '#fvp-container',
         '.gesture-clipboard-trigger',
         '.gesture-clipboard-panel',
-        '.gesture-google-search-trigger',
-        '.gesture-google-search-panel',
         '#gesture-quick-search-ui-host',
         '.gesture-quick-search-bubble'
     ];

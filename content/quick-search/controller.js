@@ -159,16 +159,6 @@
                     }
                 },
                 {
-                    label: 'Dịch',
-                    title: 'Dịch văn bản đã chọn',
-                    glyph: QUICK_GLYPHS.translate,
-                    onClick: () => {
-                        actions.translateSelectedText(session);
-                        suppressSelectionFor(session.key);
-                        hideTextBubble();
-                    }
-                },
-                {
                     label: 'Select All',
                     title: 'Select All',
                     glyph: QUICK_GLYPHS.selectAll,
@@ -182,7 +172,7 @@
                 ...getEnabledTextProviders().map((provider) => ({
                     label: provider.name,
                     title: provider.name,
-                    icon: provider.icon,
+                    glyph: provider.glyph,
                     onClick: () => {
                         actions.openSearchTab(buildProviderUrl(provider.url, { text: session.text }));
                     }
@@ -207,15 +197,6 @@
                     }
                 },
                 {
-                    label: 'OCR',
-                    title: 'Trích xuất văn bản từ ảnh',
-                    glyph: QUICK_GLYPHS.ocr,
-                    onClick: () => {
-                        actions.runOcr(session.url, session.x, session.y);
-                        hideImageBubble();
-                    }
-                },
-                {
                     label: 'Copy',
                     title: 'Copy image URL',
                     glyph: QUICK_GLYPHS.copyUrl,
@@ -229,7 +210,7 @@
                 ...getImageProviders().map((provider) => ({
                     label: provider.name,
                     title: provider.name,
-                    icon: provider.icon,
+                    glyph: provider.glyph,
                     onClick: () => {
                         actions.openSearchTab(buildProviderUrl(provider.url, { imageUrl: session.url }));
                     }

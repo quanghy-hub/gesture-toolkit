@@ -34,7 +34,7 @@
     };
 
     ext.features.videoScreenshot = {
-        shouldRun: ({ runtime }) => runtime.isHttpPage(),
+        shouldRun: ({ runtime }) => runtime.isHttpPage() && runtime.isHtmlDocument(),
         init: (context) => {
             let observer = null;
             let removeShortcutListener = () => { };

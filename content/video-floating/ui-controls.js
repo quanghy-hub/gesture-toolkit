@@ -5,6 +5,9 @@
 
     videoFloating.createUiControls = (ctx, deps) => {
         const { $, el, formatTime, getFullscreenEl, postToFloatedIframe } = deps;
+        const getPausedState = () => ctx.floatedIframe
+            ? !!ctx.iframePlaybackState.paused
+            : !!(ctx.curVid?.paused ?? true);
 
         const updateVolUI = () => {
             const btn = $('fvp-vol-btn');
@@ -13,10 +16,28 @@
             btn.textContent = volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊';
         };
 
-        const updatePlayPauseUI = () => {
-            const btn = $('fvp-play-pause');
-            if (!btn) return;
-            btn.textContent = (ctx.floatedIframe ? ctx.iframePlaybackState.paused : ctx.curVid?.paused ?? true) ? '▶' : '⏸';
+        const updatePlaybackOverlayUI = () => {
+            const button = $('fvp-center-play');
+            if (!button) return;
+            const hasActiveMedia = !!(ctx.floatedIframe || ctx.curVid);
+            if (!hasActiveMedia) {
+                button.hidden = true;
+                return;
+            }
+            const paused = getPausedState();
+            button.textContent = '▶';
+            button.setAttribute('aria-label', 'Play video');
+            button.hidden = !paused;
+        };
+
+        const togglePlayback = () => {
+            if (ctx.floatedIframe) {
+                postToFloatedIframe({ command: 'play-pause' });
+                return;
+            }
+            if (!ctx.curVid) return;
+            if (ctx.curVid.paused) ctx.curVid.play().catch(() => { });
+            else ctx.curVid.pause();
         };
 
         const syncFloatedIframeUI = () => {
@@ -34,7 +55,7 @@
             const buffer = $('fvp-buffer');
             if (buffer) buffer.style.width = duration > 0 ? `${(ctx.iframePlaybackState.bufferedEnd / duration) * 100}%` : '0%';
             updateVolUI();
-            updatePlayPauseUI();
+            updatePlaybackOverlayUI();
             const fit = $('fvp-fit');
             if (fit) fit.textContent = FIT_ICONS[ctx.iframePlaybackState.fitIdx] || FIT_ICONS[0];
             const zoom = $('fvp-zoom');
@@ -45,7 +66,11 @@
 
         const bindButtons = () => {
             $('fvp-close').onclick = deps.restore;
-            $('fvp-play-pause').onclick = () => { if (ctx.floatedIframe) postToFloatedIframe({ command: 'play-pause' }); else ctx.curVid?.paused ? ctx.curVid.play() : ctx.curVid?.pause(); };
+            $('fvp-center-play').onclick = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                togglePlayback();
+            };
             $('fvp-vol-btn').onclick = () => { if (ctx.floatedIframe) postToFloatedIframe({ command: 'toggle-mute' }); else if (ctx.curVid) { ctx.curVid.muted = !ctx.curVid.muted; updateVolUI(); } };
             $('fvp-fit').onclick = () => { if (ctx.floatedIframe) postToFloatedIframe({ command: 'cycle-fit' }); else { ctx.fitIdx = (ctx.fitIdx + 1) % FIT_MODES.length; if (ctx.curVid) ctx.curVid.style.objectFit = FIT_MODES[ctx.fitIdx]; $('fvp-fit').textContent = FIT_ICONS[ctx.fitIdx]; } };
             $('fvp-zoom').onclick = () => { if (ctx.floatedIframe) postToFloatedIframe({ command: 'cycle-zoom' }); else if (ctx.curVid) { ctx.zoomIdx = (ctx.zoomIdx + 1) % ZOOM_LEVELS.length; deps.applyTransform(); $('fvp-zoom').textContent = ZOOM_ICONS[ctx.zoomIdx]; } };
@@ -118,7 +143,8 @@
 
         return {
             updateVolUI,
-            updatePlayPauseUI,
+            togglePlayback,
+            updatePlaybackOverlayUI,
             syncFloatedIframeUI,
             bindButtons,
             bindQualityEvents

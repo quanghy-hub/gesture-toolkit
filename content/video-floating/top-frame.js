@@ -8,7 +8,6 @@
         el,
         $,
         getCoord,
-        onPointer,
         queryAllDeep,
         isLikelyVideoIframe,
         loadLayout,
@@ -128,12 +127,39 @@
             ctx.box.style.left = next.left;
             ctx.box.style.top = next.top;
             ctx.box.style.borderRadius = next.borderRadius;
+            updateLeftPanelLayout();
             return next;
         };
 
         const persistCurrentBoxLayout = () => {
             if (!ctx.box) return;
             saveLayout({ top: ctx.box.style.top, left: ctx.box.style.left, width: ctx.box.style.width, height: ctx.box.style.height, borderRadius: ctx.box.style.borderRadius });
+        };
+
+        const updateLeftPanelLayout = () => {
+            const panel = $('fvp-left-panel');
+            if (!panel || !ctx.box || ctx.box.style.display === 'none') return;
+            const visibleItems = [...panel.children].filter((node) => {
+                if (!(node instanceof HTMLElement)) return false;
+                if (node.id === 'fvp-res-popup') return false;
+                const style = getComputedStyle(node);
+                return style.display !== 'none' && style.position !== 'absolute';
+            });
+            const itemCount = visibleItems.length;
+            if (!itemCount) return;
+
+            const panelStyle = getComputedStyle(panel);
+            const rowGap = parseFloat(panelStyle.rowGap || '4') || 4;
+            const cellHeight = parseFloat(panelStyle.gridAutoRows || '30') || 30;
+            const reservedTop = 12;
+            const reservedBottom = 68;
+            const availableHeight = Math.max(cellHeight, ctx.box.clientHeight - reservedTop - reservedBottom);
+            const rows = Math.max(1, Math.min(itemCount, Math.floor((availableHeight + rowGap) / (cellHeight + rowGap))));
+
+            panel.style.gridAutoFlow = 'column';
+            panel.style.gridTemplateRows = `repeat(${rows}, ${cellHeight}px)`;
+            panel.style.gridAutoColumns = `${cellHeight}px`;
+            panel.style.columnGap = `${rowGap}px`;
         };
 
         const resetIdle = () => {
@@ -166,6 +192,7 @@
 
             ctx.box = el('div', '', `
                 <div id="fvp-wrapper"></div>
+                <button id="fvp-center-play" type="button" aria-label="Play video" hidden>▶</button>
                 <div id="fvp-left-drag"></div>
                 <div id="fvp-left-panel">
                     <div id="fvp-video-order" class="fvp-side-badge" hidden>1/1</div>
@@ -177,7 +204,6 @@
                     <button id="fvp-fit" class="fvp-btn">⤢</button>
                     <button id="fvp-full" class="fvp-btn">⛶</button>
                     <button id="fvp-close" class="fvp-btn">✕</button>
-                    <button id="fvp-play-pause" class="fvp-btn">▶</button>
                     <button id="fvp-prev" class="fvp-btn">⏮</button>
                     <button id="fvp-next" class="fvp-btn">⏭</button>
                 </div>
@@ -208,8 +234,9 @@
             ensureLayoutReady,
             formatTime: videoFloating.helpers.formatTime,
             applyBoxLayout,
+            updateLeftPanelLayout,
             updateVolUI: () => uiControls.updateVolUI(),
-            updatePlayPauseUI: () => uiControls.updatePlayPauseUI(),
+            updatePlaybackOverlayUI: () => uiControls.updatePlaybackOverlayUI(),
             postToFloatedIframe,
             ensureInitialized
         });
@@ -236,44 +263,74 @@
             switchVid: (dir) => floatingSession.switchVid(dir)
         });
 
-        const toggleMenu = () => {
-            if (!ctx.menuRef) return;
+        const isWrapperToggleBlockedTarget = (target) => {
+            const node = target instanceof Element ? target : null;
+            if (!node) return false;
+            return Boolean(node.closest('#fvp-left-panel, #fvp-ctrl, #fvp-res-popup, .fvp-resize-handle, button, input, select, textarea, a, label'));
+        };
+
+        const getAvailableMediaItems = () => {
+            const videoItems = floatingSession.getOrderedVideoSequence().map((video, index) => ({
+                type: 'video',
+                key: `video-${index}`,
+                label: `Video ${index + 1}`,
+                active: video === ctx.curVid,
+                onSelect: () => floatingSession.float(video)
+            }));
+            const iframeItems = videoFloating.helpers.getTrackedIframeEntries(ctx.iframeVideoMap).map(([iframe], index) => {
+                const domain = (() => { try { return new URL(iframe.src).hostname; } catch { return 'iframe'; } })();
+                return {
+                    type: 'iframe',
+                    key: `iframe-${index}`,
+                    label: `iFrame: ${domain}`,
+                    active: iframe === ctx.floatedIframe,
+                    onSelect: () => floatingSession.floatIframe(iframe)
+                };
+            });
+            return [...videoItems, ...iframeItems];
+        };
+
+        const openMenuAtAnchor = (anchor) => {
+            if (!ctx.menuRef || !anchor) return;
             if (!isFeatureEnabled()) {
                 ctx.menuRef.hide();
                 return;
             }
-            const isHidden = ctx.menuRef.element.hidden || getComputedStyle(ctx.menuRef.element).display === 'none';
-            if (isHidden) {
-                const rect = ctx.iconRef.element.getBoundingClientRect();
-                ctx.menuRef.setPosition(videoFloating.helpers.clamp(rect.left, 10, innerWidth - 206), innerHeight - rect.bottom < 300 ? 'auto' : rect.bottom + 10);
-                if (innerHeight - rect.bottom < 300) ctx.menuRef.element.style.bottom = `${innerHeight - rect.top + 10}px`;
-                else ctx.menuRef.element.style.bottom = 'auto';
-                renderMenu();
-                ctx.menuRef.show('flex');
-            } else {
-                ctx.menuRef.hide();
+            const rect = anchor.getBoundingClientRect();
+            ctx.menuRef.element.style.width = '';
+            ctx.menuRef.element.style.maxHeight = '';
+            ctx.menuRef.setPosition(videoFloating.helpers.clamp(rect.left, 10, innerWidth - 206), innerHeight - rect.bottom < 300 ? 'auto' : rect.bottom + 10);
+            if (innerHeight - rect.bottom < 300) ctx.menuRef.element.style.bottom = `${innerHeight - rect.top + 10}px`;
+            else ctx.menuRef.element.style.bottom = 'auto';
+            renderMenu();
+            ctx.menuRef.show('flex');
+        };
+
+        const floatFirstAvailableMedia = () => {
+            if (!isFeatureEnabled()) return;
+            const [firstItem] = getAvailableMediaItems();
+            if (!firstItem) {
+                ctx.menuRef?.hide();
+                return;
             }
+            ctx.menuRef?.hide();
+            firstItem.onSelect();
         };
 
         const renderMenu = () => {
-            const list = floatingSession.getOrderedVideoSequence();
-            const iframeList = videoFloating.helpers.getTrackedIframeEntries(ctx.iframeVideoMap);
-            const total = list.length + iframeList.length;
+            const items = getAvailableMediaItems();
             const menu = ctx.menuRef.element;
             menu.innerHTML = '';
-            if (!total) {
+            if (!items.length) {
                 menu.innerHTML = '<div class="fvp-menu-item" style="opacity:0.5">No videos found</div>';
                 return;
             }
-            list.forEach((video, index) => {
-                const item = el('div', 'fvp-menu-item', `<span class="fvp-menu-icon">${menuVideoIcon}</span><span>Video ${index + 1}</span>`);
-                item.onclick = () => floatingSession.float(video);
-                menu.appendChild(item);
-            });
-            iframeList.forEach(([iframe]) => {
-                const domain = (() => { try { return new URL(iframe.src).hostname; } catch { return 'iframe'; } })();
-                const item = el('div', 'fvp-menu-item', `<span class="fvp-menu-icon">${menuVideoIcon}</span><span>iFrame: ${domain}</span>`);
-                item.onclick = () => floatingSession.floatIframe(iframe);
+            items.forEach((entry) => {
+                const item = el('div', `fvp-menu-item${entry.active ? ' active' : ''}`, `<span class="fvp-menu-icon">${menuVideoIcon}</span><span>${entry.label}</span>`);
+                item.onclick = () => {
+                    entry.onSelect();
+                    ctx.menuRef.hide();
+                };
                 menu.appendChild(item);
             });
         };
@@ -300,82 +357,278 @@
         window.addEventListener(TOUCH_SWITCH_VIDEO_EVENT, onTouchSwitchVideo);
         ctx.cleanup.push(() => window.removeEventListener(TOUCH_SWITCH_VIDEO_EVENT, onTouchSwitchVideo));
 
-        const removeIconDrag = floating.bindDragBehavior({
-            target: ctx.iconRef.element,
-            getInitialPosition: () => ({ left: ctx.iconRef.element.offsetLeft, top: ctx.iconRef.element.offsetTop }),
-            onMove: ({ deltaX, deltaY, origin }) => {
+        {
+            const DOUBLE_TAP_MS = 280;
+            const DRAG_THRESHOLD = 6;
+            let pointerId = null;
+            let startX = 0;
+            let startY = 0;
+            let dragging = false;
+            let origin = { left: 0, top: 0 };
+            let tapTimer = 0;
+            let mouseClickTimer = 0;
+            let lastTapAt = 0;
+
+            const clearTapTimer = () => {
+                clearTimeout(tapTimer);
+                tapTimer = 0;
+            };
+            const clearMouseClickTimer = () => {
+                clearTimeout(mouseClickTimer);
+                mouseClickTimer = 0;
+            };
+            const resetIconPointer = () => {
+                pointerId = null;
+                dragging = false;
+            };
+            const handleIconPointerDown = (event) => {
+                if (event.button !== 0) return;
+                pointerId = event.pointerId;
+                startX = event.clientX;
+                startY = event.clientY;
+                origin = { left: ctx.iconRef.element.offsetLeft, top: ctx.iconRef.element.offsetTop };
+                dragging = false;
+                try { ctx.iconRef.element.setPointerCapture(event.pointerId); } catch { }
+            };
+            const handleIconPointerMove = (event) => {
+                if (event.pointerId !== pointerId) return;
+                const deltaX = event.clientX - startX;
+                const deltaY = event.clientY - startY;
+                if (!dragging && Math.hypot(deltaX, deltaY) >= DRAG_THRESHOLD) {
+                    dragging = true;
+                    clearTapTimer();
+                    ctx.menuRef.hide();
+                }
+                if (!dragging) return;
                 const next = floating.clampFixedPosition({ left: origin.left + deltaX, top: origin.top + deltaY, width: 42, height: 42, margin: 10 });
                 ctx.iconRef.setPosition(next.left, next.top);
                 resetIdle();
-            },
-            onDragEnd: () => iconPosStorage.save(ctx.iconRef.element.style.left, ctx.iconRef.element.style.top),
-            onClick: toggleMenu
-        });
-        ctx.cleanup.push(removeIconDrag);
+            };
+            const handleIconPointerUp = (event) => {
+                if (event.pointerId !== pointerId) return;
+                if (dragging) {
+                    iconPosStorage.save(ctx.iconRef.element.style.left, ctx.iconRef.element.style.top);
+                } else {
+                    if (event.pointerType === 'mouse') {
+                        clearTapTimer();
+                        clearMouseClickTimer();
+                        lastTapAt = 0;
+                        mouseClickTimer = window.setTimeout(() => {
+                            mouseClickTimer = 0;
+                            floatFirstAvailableMedia();
+                        }, DOUBLE_TAP_MS);
+                        resetIconPointer();
+                        return;
+                    }
+                    const now = Date.now();
+                    if (lastTapAt && now - lastTapAt <= DOUBLE_TAP_MS) {
+                        clearTapTimer();
+                        lastTapAt = 0;
+                        openMenuAtAnchor(ctx.iconRef.element);
+                    } else {
+                        lastTapAt = now;
+                        clearTapTimer();
+                        tapTimer = window.setTimeout(() => {
+                            tapTimer = 0;
+                            lastTapAt = 0;
+                            floatFirstAvailableMedia();
+                        }, DOUBLE_TAP_MS);
+                    }
+                }
+                resetIconPointer();
+            };
+            const handleIconPointerCancel = (event) => {
+                if (event.pointerId !== pointerId) return;
+                resetIconPointer();
+            };
+            const handleIconDoubleClick = (event) => {
+                if (event.button !== 0) return;
+                clearTapTimer();
+                clearMouseClickTimer();
+                lastTapAt = 0;
+                ctx.menuRef.hide();
+                openMenuAtAnchor(ctx.iconRef.element);
+                event.preventDefault();
+                event.stopPropagation();
+            };
+
+            ctx.iconRef.element.addEventListener('pointerdown', handleIconPointerDown, true);
+            ctx.iconRef.element.addEventListener('pointermove', handleIconPointerMove, true);
+            ctx.iconRef.element.addEventListener('pointerup', handleIconPointerUp, true);
+            ctx.iconRef.element.addEventListener('pointercancel', handleIconPointerCancel, true);
+            ctx.iconRef.element.addEventListener('dblclick', handleIconDoubleClick, true);
+            ctx.cleanup.push(() => {
+                clearTapTimer();
+                clearMouseClickTimer();
+                ctx.iconRef.element.removeEventListener('pointerdown', handleIconPointerDown, true);
+                ctx.iconRef.element.removeEventListener('pointermove', handleIconPointerMove, true);
+                ctx.iconRef.element.removeEventListener('pointerup', handleIconPointerUp, true);
+                ctx.iconRef.element.removeEventListener('pointercancel', handleIconPointerCancel, true);
+                ctx.iconRef.element.removeEventListener('dblclick', handleIconDoubleClick, true);
+            });
+        }
         const removeOutsideClick = floating.bindOutsideClickGuard({
             isOpen: () => ctx.menuRef.element.style.display !== 'none',
-            containsTarget: (target) => ctx.iconRef.element.contains(target) || ctx.menuRef.element.contains(target),
+            containsTarget: (target) => ctx.iconRef.element.contains(target)
+                || ctx.menuRef.element.contains(target),
             onOutside: () => ctx.menuRef.hide()
         });
         ctx.cleanup.push(removeOutsideClick);
 
-        onPointer($('fvp-left-drag'), (event) => {
-            if (touch?.isTouchLikeEvent?.(event)) touch.preventCancelable(event);
-            const c = getCoord(event);
-            ctx.state.isDrag = true;
-            ctx.state.startX = c.x;
-            ctx.state.startY = c.y;
-            ctx.state.initX = ctx.box.offsetLeft;
-            ctx.state.initY = ctx.box.offsetTop;
-        });
-        ctx.box.querySelectorAll('.fvp-resize-handle').forEach((handle) => onPointer(handle, (event) => {
-            if (touch?.isTouchLikeEvent?.(event)) touch.preventCancelable(event);
-            ctx.state.isResize = true;
-            ctx.state.resizeDir = handle.className.includes('bl') ? 'bl' : 'br';
-            const c = getCoord(event);
-            ctx.state.startX = c.x;
-            ctx.state.startY = c.y;
-            ctx.state.initW = ctx.box.offsetWidth;
-            ctx.state.initH = ctx.box.offsetHeight;
-            ctx.state.initX = ctx.box.offsetLeft;
-        }));
+        {
+            const TAP_MOVE_THRESHOLD = 10;
+            let wrapperPointerId = null;
+            let wrapperStartX = 0;
+            let wrapperStartY = 0;
+            let wrapperMoved = false;
 
-        const handleBoxPointerMove = (event) => {
-            if (!ctx.state.isDrag && !ctx.state.isResize) return;
-            if (touch?.isTouchLikeEvent?.(event)) touch.preventCancelable(event);
-            const c = getCoord(event);
-            const dx = c.x - ctx.state.startX;
-            const dy = c.y - ctx.state.startY;
-            if (ctx.state.isDrag) {
-                const next = floating.clampFixedPosition({ left: ctx.state.initX + dx, top: ctx.state.initY + dy, width: ctx.box.offsetWidth, height: ctx.box.offsetHeight, margin: 8 });
-                ctx.box.style.left = `${next.left}px`;
-                ctx.box.style.top = `${next.top}px`;
-            } else if (ctx.state.isResize) {
-                const width = Math.min(Math.max(ctx.state.resizeDir === 'bl' ? ctx.state.initW - dx : ctx.state.initW + dx, 200), Math.max(200, window.innerWidth - 8));
-                const height = Math.min(Math.max(ctx.state.initH + dy, 120), Math.max(120, window.innerHeight - 8));
-                const left = ctx.state.resizeDir === 'bl' ? ctx.state.initX + (ctx.state.initW - width) : ctx.box.offsetLeft;
-                const next = floating.clampFixedPosition({ left, top: ctx.box.offsetTop, width, height, margin: 8 });
-                ctx.box.style.width = `${Math.round(width)}px`;
-                ctx.box.style.height = `${Math.round(height)}px`;
-                ctx.box.style.left = `${Math.round(next.left)}px`;
-                ctx.box.style.top = `${Math.round(next.top)}px`;
-            }
-        };
-        const handleBoxPointerEnd = () => {
-            if (ctx.state.isDrag || ctx.state.isResize) persistCurrentBoxLayout();
-            ctx.state.isDrag = false;
-            ctx.state.isResize = false;
-        };
-        document.addEventListener('mousemove', handleBoxPointerMove);
-        document.addEventListener('mouseup', handleBoxPointerEnd);
-        document.addEventListener('touchmove', handleBoxPointerMove, { passive: false });
-        document.addEventListener('touchend', handleBoxPointerEnd, { passive: true });
-        document.addEventListener('touchcancel', handleBoxPointerEnd, { passive: true });
-        ctx.cleanup.push(() => document.removeEventListener('mousemove', handleBoxPointerMove));
-        ctx.cleanup.push(() => document.removeEventListener('mouseup', handleBoxPointerEnd));
-        ctx.cleanup.push(() => document.removeEventListener('touchmove', handleBoxPointerMove, { passive: false }));
-        ctx.cleanup.push(() => document.removeEventListener('touchend', handleBoxPointerEnd, { passive: true }));
-        ctx.cleanup.push(() => document.removeEventListener('touchcancel', handleBoxPointerEnd, { passive: true }));
+            const resetWrapperTap = () => {
+                wrapperPointerId = null;
+                wrapperMoved = false;
+            };
+            const handleWrapperPointerDown = (event) => {
+                if (event.button !== undefined && event.button !== 0) return;
+                if (isWrapperToggleBlockedTarget(event.target)) return;
+                if (ctx.box?.style.display === 'none') return;
+                wrapperPointerId = event.pointerId ?? 'mouse';
+                wrapperStartX = event.clientX ?? 0;
+                wrapperStartY = event.clientY ?? 0;
+                wrapperMoved = false;
+            };
+            const handleWrapperPointerMove = (event) => {
+                if ((event.pointerId ?? 'mouse') !== wrapperPointerId) return;
+                if (wrapperMoved) return;
+                if (Math.hypot((event.clientX ?? 0) - wrapperStartX, (event.clientY ?? 0) - wrapperStartY) >= TAP_MOVE_THRESHOLD) {
+                    wrapperMoved = true;
+                }
+            };
+            const handleWrapperPointerEnd = (event) => {
+                if ((event.pointerId ?? 'mouse') !== wrapperPointerId) return;
+                const shouldToggle = !wrapperMoved
+                    && !ctx.state.isDrag
+                    && !ctx.state.isResize
+                    && !ctx.state.isSeeking
+                    && !ctx.state.seekDragActive
+                    && !isWrapperToggleBlockedTarget(event.target);
+                resetWrapperTap();
+                if (!shouldToggle) return;
+                uiControls.togglePlayback();
+                if (event.cancelable) event.preventDefault();
+                event.stopPropagation();
+            };
+            const handleWrapperPointerCancel = (event) => {
+                if ((event.pointerId ?? 'mouse') !== wrapperPointerId) return;
+                resetWrapperTap();
+            };
+
+            const wrapperEl = $('fvp-wrapper');
+            wrapperEl.addEventListener('pointerdown', handleWrapperPointerDown, true);
+            wrapperEl.addEventListener('pointermove', handleWrapperPointerMove, true);
+            wrapperEl.addEventListener('pointerup', handleWrapperPointerEnd, true);
+            wrapperEl.addEventListener('pointercancel', handleWrapperPointerCancel, true);
+            ctx.cleanup.push(() => {
+                wrapperEl.removeEventListener('pointerdown', handleWrapperPointerDown, true);
+                wrapperEl.removeEventListener('pointermove', handleWrapperPointerMove, true);
+                wrapperEl.removeEventListener('pointerup', handleWrapperPointerEnd, true);
+                wrapperEl.removeEventListener('pointercancel', handleWrapperPointerCancel, true);
+            });
+        }
+
+        {
+            let activeBoxPointerId = null;
+            let activeBoxPointerEl = null;
+
+            const beginBoxInteraction = (event, mode, resizeDir = '') => {
+                if (event.button !== undefined && event.button !== 0) return;
+                if (touch?.isTouchLikeEvent?.(event)) touch.preventCancelable(event);
+                const c = getCoord(event);
+                activeBoxPointerId = event.pointerId ?? 'mouse';
+                activeBoxPointerEl = event.currentTarget instanceof Element ? event.currentTarget : null;
+                ctx.state.isDrag = mode === 'drag';
+                ctx.state.isResize = mode === 'resize';
+                ctx.state.resizeDir = resizeDir;
+                ctx.state.startX = c.x;
+                ctx.state.startY = c.y;
+                ctx.state.initX = ctx.box.offsetLeft;
+                ctx.state.initY = ctx.box.offsetTop;
+                ctx.state.initW = ctx.box.offsetWidth;
+                ctx.state.initH = ctx.box.offsetHeight;
+                try { activeBoxPointerEl?.setPointerCapture?.(event.pointerId); } catch { }
+                resetIdle();
+            };
+
+            const handleBoxPointerMove = (event) => {
+                if ((event.pointerId ?? 'mouse') !== activeBoxPointerId) return;
+                if (!ctx.state.isDrag && !ctx.state.isResize) return;
+                if (touch?.isTouchLikeEvent?.(event)) touch.preventCancelable(event);
+                const c = getCoord(event);
+                const dx = c.x - ctx.state.startX;
+                const dy = c.y - ctx.state.startY;
+                if (ctx.state.isDrag) {
+                    const next = floating.clampFixedPosition({ left: ctx.state.initX + dx, top: ctx.state.initY + dy, width: ctx.box.offsetWidth, height: ctx.box.offsetHeight, margin: 8 });
+                    ctx.box.style.left = `${next.left}px`;
+                    ctx.box.style.top = `${next.top}px`;
+                    updateLeftPanelLayout();
+                } else if (ctx.state.isResize) {
+                    const width = Math.min(Math.max(ctx.state.resizeDir === 'bl' ? ctx.state.initW - dx : ctx.state.initW + dx, 200), Math.max(200, window.innerWidth - 8));
+                    const height = Math.min(Math.max(ctx.state.initH + dy, 120), Math.max(120, window.innerHeight - 8));
+                    const left = ctx.state.resizeDir === 'bl' ? ctx.state.initX + (ctx.state.initW - width) : ctx.state.initX;
+                    const next = floating.clampFixedPosition({ left, top: ctx.state.initY, width, height, margin: 8 });
+                    ctx.box.style.width = `${Math.round(width)}px`;
+                    ctx.box.style.height = `${Math.round(height)}px`;
+                    ctx.box.style.left = `${Math.round(next.left)}px`;
+                    ctx.box.style.top = `${Math.round(next.top)}px`;
+                    updateLeftPanelLayout();
+                }
+            };
+
+            const endBoxInteraction = (event) => {
+                if ((event.pointerId ?? 'mouse') !== activeBoxPointerId) return;
+                if (ctx.state.isDrag || ctx.state.isResize) persistCurrentBoxLayout();
+                try { activeBoxPointerEl?.releasePointerCapture?.(event.pointerId); } catch { }
+                activeBoxPointerId = null;
+                activeBoxPointerEl = null;
+                ctx.state.isDrag = false;
+                ctx.state.isResize = false;
+            };
+
+            const leftDragEl = $('fvp-left-drag');
+            const handleLeftDragPointerDown = (event) => beginBoxInteraction(event, 'drag');
+            leftDragEl.addEventListener('pointerdown', handleLeftDragPointerDown, true);
+            leftDragEl.addEventListener('pointermove', handleBoxPointerMove, true);
+            leftDragEl.addEventListener('pointerup', endBoxInteraction, true);
+            leftDragEl.addEventListener('pointercancel', endBoxInteraction, true);
+
+            const resizeCleanup = [];
+            ctx.box.querySelectorAll('.fvp-resize-handle').forEach((handle) => {
+                const resizeDir = handle.className.includes('bl') ? 'bl' : 'br';
+                const handleResizePointerDown = (event) => beginBoxInteraction(event, 'resize', resizeDir);
+                handle.addEventListener('pointerdown', handleResizePointerDown, true);
+                handle.addEventListener('pointermove', handleBoxPointerMove, true);
+                handle.addEventListener('pointerup', endBoxInteraction, true);
+                handle.addEventListener('pointercancel', endBoxInteraction, true);
+                resizeCleanup.push(() => {
+                    handle.removeEventListener('pointerdown', handleResizePointerDown, true);
+                    handle.removeEventListener('pointermove', handleBoxPointerMove, true);
+                    handle.removeEventListener('pointerup', endBoxInteraction, true);
+                    handle.removeEventListener('pointercancel', endBoxInteraction, true);
+                });
+            });
+
+            ctx.cleanup.push(() => {
+                leftDragEl.removeEventListener('pointerdown', handleLeftDragPointerDown, true);
+                leftDragEl.removeEventListener('pointermove', handleBoxPointerMove, true);
+                leftDragEl.removeEventListener('pointerup', endBoxInteraction, true);
+                leftDragEl.removeEventListener('pointercancel', endBoxInteraction, true);
+                resizeCleanup.forEach((fn) => fn());
+            });
+        }
+
+        if (typeof ResizeObserver === 'function') {
+            const boxResizeObserver = new ResizeObserver(() => updateLeftPanelLayout());
+            boxResizeObserver.observe(ctx.box);
+            ctx.cleanup.push(() => boxResizeObserver.disconnect());
+        }
 
         const onResize = () => {
             if (ctx.box?.style.display === 'none') return;

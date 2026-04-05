@@ -22,7 +22,8 @@
 
 - The extension opens user-requested search URLs in new tabs.
 - The extension does not send user data to developer-owned servers.
-- The popup and quick-search UI do not fetch third-party icon assets.
+- The popup does not fetch third-party icon assets.
+- The quick-search bubble may request provider favicon images from provider domains to display service icons.
 
 ## User controls
 
@@ -32,4 +33,5 @@
 
 ## Contact
 
-Set your support email or website before publishing this policy publicly.
+- Support email: `victus59.3@gmail.com`
+- Support page: `https://quanghy-hub.github.io/donate/?source=extension`

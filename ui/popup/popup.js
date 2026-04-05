@@ -188,12 +188,12 @@
 
         hostBlacklistToggle.disabled = !normalizedActiveHost;
         hostBlacklistToggle.checked = normalizedActiveHost ? isHostExcluded(config, normalizedActiveHost) : false;
-        hostBlacklistLabel.textContent = normalizedActiveHost || 'Không có host';
-        hostLabel.textContent = normalizedActiveHost || 'Không có host hiện tại';
+        hostBlacklistLabel.textContent = normalizedActiveHost || 'No host';
+        hostLabel.textContent = normalizedActiveHost || 'No current host';
         if (hostBlacklistNote) {
             hostBlacklistNote.textContent = normalizedActiveHost
-                ? `Nếu bật, toolkit sẽ không inject trên ${normalizedActiveHost} sau khi reload tab.`
-                : 'Trang hiện tại không có host hợp lệ để blacklist.';
+                ? `When enabled, the toolkit will stop injecting on ${normalizedActiveHost} after the tab reloads.`
+                : 'The current page does not expose a valid host to blacklist.';
         }
 
         syncFeatureCards();

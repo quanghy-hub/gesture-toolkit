@@ -23,13 +23,15 @@
             const image = document.createElement('img');
             image.src = item.icon;
             image.alt = '';
+            image.decoding = 'async';
+            image.referrerPolicy = 'no-referrer';
             image.addEventListener('error', () => {
-                image.replaceWith(createFallbackIcon(item.label));
+                image.replaceWith(createFallbackIcon(item.name || item.label || item.glyph));
             }, { once: true });
             return image;
         }
 
-        return createFallbackIcon(item.label);
+        return createFallbackIcon(item.name || item.label || item.glyph);
     };
 
     const ensureUiRoot = () => {

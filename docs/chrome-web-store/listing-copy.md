@@ -23,9 +23,10 @@ This Chrome Web Store build focuses on browsing workflow tools only.
 
 ## Support
 
-- Primary CTA: Ko-fi
-- Secondary CTA: copy crypto wallet address
-- Secondary contact: add support email or website before publishing
+- Primary CTA: support page
+- Secondary CTA: premium page
+- Support email: `victus59.3@gmail.com`
+- Support page: `https://quanghy-hub.github.io/donate/?source=extension`
 
 ## Suggested Screenshots
 

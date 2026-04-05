@@ -18,24 +18,40 @@
         selectionCleanupRetryMs: 180
     });
 
+    const withProviderIcons = (providers) => providers.map((provider) => {
+        if (provider.icon) {
+            return provider;
+        }
+
+        try {
+            const origin = new URL(provider.url).origin;
+            return {
+                ...provider,
+                icon: `${origin}/favicon.ico`
+            };
+        } catch {
+            return provider;
+        }
+    });
+
     quickSearch.DEFAULT_SETTINGS = Object.freeze({
-        providers: [
+        providers: withProviderIcons([
             { id: 'google', name: 'Google', url: 'https://www.google.com/search?q={{q}}', glyph: 'G' },
             { id: 'perplexity', name: 'Perplexity', url: 'https://www.perplexity.ai/search?q={{q}}', glyph: 'P' },
             { id: 'chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com/?q={{q}}', glyph: 'CG' },
-            { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com/app?q={{q}}', glyph: 'Ge' },
+            { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com/app?q={{q}}', glyph: 'Ge', icon: 'https://www.google.com/favicon.ico' },
             { id: 'claude', name: 'Claude', url: 'https://claude.ai/new?q={{q}}', glyph: 'Cl' },
             { id: 'copilot', name: 'Copilot', url: 'https://copilot.microsoft.com/?q={{q}}', glyph: 'Co' },
             { id: 'bing', name: 'Bing', url: 'https://www.bing.com/search?q={{q}}', glyph: 'B' },
             { id: 'duckduckgo', name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q={{q}}', glyph: 'DD' },
             { id: 'youtube', name: 'YouTube', url: 'https://www.youtube.com/results?search_query={{q}}', glyph: 'YT' },
-            { id: 'google-images', name: 'Ảnh Google', url: 'https://www.google.com/search?tbm=isch&q={{q}}', glyph: 'GI' }
-        ],
-        imageProviders: [
-            { id: 'google-lens', name: 'Google Lens', url: 'https://lens.google.com/uploadbyurl?url={{img}}', glyph: 'GL' },
+            { id: 'google-images', name: 'Google Images', url: 'https://www.google.com/search?tbm=isch&q={{q}}', glyph: 'GI' }
+        ]),
+        imageProviders: withProviderIcons([
+            { id: 'google-lens', name: 'Google Lens', url: 'https://lens.google.com/uploadbyurl?url={{img}}', glyph: 'GL', icon: 'https://www.google.com/favicon.ico' },
             { id: 'bing-visual', name: 'Bing Visual', url: 'https://www.bing.com/images/search?view=detailv2&iss=sbi&form=SBIIDP&q=imgurl:{{img}}', glyph: 'BV' },
             { id: 'yandex-images', name: 'Yandex Images', url: 'https://yandex.com/images/search?rpt=imageview&url={{img}}', glyph: 'YI' }
-        ]
+        ])
     });
 
     quickSearch.QUICK_GLYPHS = Object.freeze({

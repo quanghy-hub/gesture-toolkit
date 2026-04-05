@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 
 <head>
   <meta charset="utf-8">
@@ -13,28 +13,28 @@
     <header class="header">
       <div>
         <h1>Gesture Toolkit</h1>
-        <p id="current-host">Đang tải...</p>
+        <p id="current-host">Loading...</p>
       </div>
       <div class="header-actions">
-        <button id="close-popup" class="secondary" type="button">Đóng</button>
+        <button id="close-popup" class="secondary" type="button">Close</button>
       </div>
     </header>
 
     <section class="card">
       <h2 class="card-title">Host Blacklist</h2>
-      <p id="host-blacklist-note" class="section-note">Có thể tắt toàn bộ toolkit trên host hiện tại.</p>
+      <p id="host-blacklist-note" class="section-note">Disable the toolkit on the current host.</p>
       <div class="table">
         <div class="item">
           <span class="label-main">Current host</span>
           <span class="label-sub">Disable</span>
-          <span class="param"><span id="host-blacklist-label" class="param-name">Không có host</span></span>
-          <span class="toggle"><input id="host-blacklist-toggle" type="checkbox" aria-label="Tắt toolkit trên host hiện tại"></span>
+          <span class="param"><span id="host-blacklist-label" class="param-name">No host</span></span>
+          <span class="toggle"><input id="host-blacklist-toggle" type="checkbox" aria-label="Disable the toolkit on the current host"></span>
         </div>
       </div>
     </section>
 
     <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Gestures</span><input id="feature-gestures-enabled" type="checkbox" aria-label="Bật Gestures"></h2>
+      <h2 class="card-title card-title-with-toggle"><span>Gestures</span><input id="feature-gestures-enabled" type="checkbox" aria-label="Enable gestures"></h2>
       <div class="table">
         <div class="item">
           <span class="label-main">Long press</span>
@@ -115,7 +115,7 @@
     </section>
 
     <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Clipboard</span><input id="feature-clipboard-enabled" type="checkbox" aria-label="Bật Clipboard"></h2>
+      <h2 class="card-title card-title-with-toggle"><span>Clipboard</span><input id="feature-clipboard-enabled" type="checkbox" aria-label="Enable clipboard"></h2>
       <div class="table">
         <div class="item">
           <span class="label-main">History</span>
@@ -128,14 +128,14 @@
           <span class="label-main">History</span>
           <span class="label-sub">Clear</span>
           <span class="param"><span class="param-name">Clear</span><button id="clipboard-clear"
-              class="secondary inline-button" type="button">Xóa</button></span>
+              class="secondary inline-button" type="button">Clear</button></span>
           <span class="toggle toggle-empty"></span>
         </div>
       </div>
     </section>
 
     <section class="card">
-      <h2 class="card-title card-title-with-toggle"><span>Quick Search</span><input id="feature-quick-search-enabled" type="checkbox" aria-label="Bật Quick Search"></h2>
+      <h2 class="card-title card-title-with-toggle"><span>Quick Search</span><input id="feature-quick-search-enabled" type="checkbox" aria-label="Enable Quick Search"></h2>
       <div class="table">
         <div class="item">
           <span class="label-main">Bubble</span>
